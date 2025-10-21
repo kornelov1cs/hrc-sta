@@ -641,6 +641,71 @@ def interactive_drawing_interface():
             key=f"canvas_{st.session_state.canvas_key}",
         )
 
+        # Display combined visualization with robot strokes
+        st.markdown("#### Collaborative Painting (with Robot)")
+        all_strokes = [s.to_dict() for s in st.session_state.environment.canvas.strokes]
+        if all_strokes:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(figsize=(10, 7.5))
+            ax.set_xlim(0, 800)
+            ax.set_ylim(0, 600)
+            ax.set_aspect('equal')
+            ax.set_facecolor('white')
+            ax.invert_yaxis()  # Match canvas coordinates
+
+            # Plot strokes
+            for stroke in all_strokes:
+                x, y = stroke['position']
+                size = stroke['size']
+
+                # Get color value
+                color_val = stroke['color']
+                if isinstance(color_val, str):
+                    color_to_use = color_val
+                else:
+                    # Map Color enum names to hex
+                    color_map = {
+                        'Red': '#FF6B6B',
+                        'Blue': '#4ECDC4',
+                        'Yellow': '#FFE66D',
+                        'Green': '#95E1D3',
+                        'Purple': '#AA96DA',
+                        'Orange': '#FCBF49'
+                    }
+                    color_to_use = color_map.get(color_val, '#FF6B6B')
+
+                agent = stroke['agent']
+
+                # Different markers for user vs robot
+                if agent == 'patient':
+                    marker = 'o'
+                    alpha = 0.7
+                    edgecolor = 'darkred'
+                else:
+                    marker = 's'
+                    alpha = 0.8
+                    edgecolor = 'darkblue'
+                    linewidth = 2
+
+                ax.scatter(x, y, s=size**2, c=color_to_use, marker=marker,
+                          alpha=alpha, edgecolors=edgecolor, linewidths=linewidth if agent == 'robot' else 1)
+
+            # Legend
+            from matplotlib.patches import Patch
+            legend_elements = [
+                Patch(facecolor='red', edgecolor='darkred', label='Your strokes'),
+                Patch(facecolor='blue', edgecolor='darkblue', label='Robot strokes', linewidth=2)
+            ]
+            ax.legend(handles=legend_elements, loc='upper right')
+
+            ax.set_xlabel('X Position')
+            ax.set_ylabel('Y Position')
+            ax.grid(True, alpha=0.2)
+            plt.tight_layout()
+
+            st.pyplot(fig)
+            plt.close()
+
         # Process canvas changes
         if canvas_result.json_data is not None:
             objects = canvas_result.json_data.get("objects", [])
