@@ -7,12 +7,18 @@ import sys
 from pathlib import Path
 import json
 import pandas as pd
+import numpy as np
+from streamlit_drawable_canvas import st_canvas
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from simulation import TherapeuticPaintingSimulation
-from utils import PatientState
+from utils import PatientState, Color, Shape, Observation
+from intent_recognition import PatientIntentHMM
+from robot_controller import RobotBDI
+from environment import TherapyEnvironment
+from intelligent_painter import IntelligentPainter
 import plotting
 
 
@@ -63,7 +69,7 @@ def main():
     # Mode selection
     mode_option = st.sidebar.selectbox(
         "Select Mode",
-        options=["Single Run", "Comparison", "Load Results"],
+        options=["Single Run", "Comparison", "Load Results", "Interactive Drawing"],
         index=0
     )
 
@@ -71,8 +77,10 @@ def main():
         single_run_interface()
     elif mode_option == "Comparison":
         comparison_interface()
-    else:
+    elif mode_option == "Load Results":
         load_results_interface()
+    else:
+        interactive_drawing_interface()
 
 
 def single_run_interface():
@@ -530,6 +538,356 @@ def load_results_interface():
             history['timesteps']
         )
         st.pyplot(fig_belief)
+
+
+def interactive_drawing_interface():
+    """Interface for interactive drawing with robot responses."""
+
+    st.subheader("🎨 Interactive Co-Painting")
+    st.markdown("Draw on the canvas and watch the robot respond to your artwork!")
+
+    # Initialize session state
+    if 'interactive_mode' not in st.session_state:
+        st.session_state.interactive_mode = 'reactive'
+        st.session_state.hmm = PatientIntentHMM()
+        st.session_state.robot = None
+        st.session_state.environment = None
+        st.session_state.intelligent_painter = None
+        st.session_state.stroke_count = 0
+        st.session_state.canvas_key = 0
+        st.session_state.robot_strokes = []
+        st.session_state.user_strokes = []
+        st.session_state.interaction_history = []
+
+    # Sidebar controls
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Drawing Controls")
+
+    # Robot mode
+    robot_mode = st.sidebar.radio(
+        "Robot Behavior",
+        options=["reactive", "proactive"],
+        index=0,
+        help="Reactive: Robot waits for your action. Proactive: Robot suggests and initiates."
+    )
+
+    # Update mode if changed
+    if robot_mode != st.session_state.interactive_mode:
+        st.session_state.interactive_mode = robot_mode
+        st.session_state.robot = RobotBDI(mode=robot_mode)
+        st.session_state.environment = TherapyEnvironment(robot_mode=robot_mode)
+        st.session_state.intelligent_painter = IntelligentPainter(mode=robot_mode)
+
+    # Initialize components if needed
+    if st.session_state.robot is None:
+        st.session_state.robot = RobotBDI(mode=robot_mode)
+        st.session_state.environment = TherapyEnvironment(robot_mode=robot_mode)
+        st.session_state.intelligent_painter = IntelligentPainter(mode=robot_mode)
+
+    # Drawing settings
+    stroke_width = st.sidebar.slider("Brush Size", 1, 50, 10)
+    stroke_color = st.sidebar.color_picker("Brush Color", "#FF6B6B")  # Default to RED
+
+    st.sidebar.caption("💡 Available colors: Red, Blue, Yellow, Green, Purple, Orange")
+
+    # Text prompt for robot
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Prompt Robot")
+    text_prompt = st.sidebar.text_input(
+        "Tell the robot what to draw:",
+        placeholder="e.g., 'add some blue circles'"
+    )
+
+    if st.sidebar.button("Send Prompt"):
+        if text_prompt:
+            robot_response = handle_text_prompt(
+                text_prompt,
+                st.session_state.environment,
+                st.session_state.intelligent_painter
+            )
+            st.session_state.robot_strokes.extend(robot_response)
+            st.session_state.interaction_history.append({
+                'type': 'prompt',
+                'content': text_prompt,
+                'response': len(robot_response)
+            })
+
+    # Clear canvas button
+    if st.sidebar.button("Clear Canvas"):
+        st.session_state.robot_strokes = []
+        st.session_state.user_strokes = []
+        st.session_state.stroke_count = 0
+        st.session_state.canvas_key += 1
+        st.session_state.hmm.reset()
+        st.session_state.environment = TherapyEnvironment(robot_mode=robot_mode)
+        st.session_state.interaction_history = []
+        st.rerun()
+
+    # Main canvas area
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown("#### Your Canvas")
+
+        # Create canvas
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 255, 255, 0)",
+            stroke_width=stroke_width,
+            stroke_color=stroke_color,
+            background_color="#FFFFFF",
+            height=600,
+            width=800,
+            drawing_mode="freedraw",
+            key=f"canvas_{st.session_state.canvas_key}",
+        )
+
+        # Process canvas changes
+        if canvas_result.json_data is not None:
+            objects = canvas_result.json_data.get("objects", [])
+
+            # Check if user added new strokes
+            if len(objects) > st.session_state.stroke_count:
+                new_strokes = objects[st.session_state.stroke_count:]
+                st.session_state.stroke_count = len(objects)
+
+                # Process new user strokes
+                user_stroke_data = process_user_strokes(new_strokes)
+                st.session_state.user_strokes.extend(user_stroke_data)
+
+                # Update environment
+                for stroke in user_stroke_data:
+                    st.session_state.environment.canvas.add_stroke(
+                        agent='patient',
+                        position=stroke['position'],
+                        color=stroke['color'],
+                        shape=stroke['shape'],
+                        size=stroke['size'],
+                        timestamp=st.session_state.environment.current_timestep
+                    )
+
+                # Infer user state and get robot response
+                observation = infer_observation_from_drawing(user_stroke_data)
+                robot_response = get_robot_response(
+                    observation,
+                    st.session_state.hmm,
+                    st.session_state.robot,
+                    st.session_state.environment
+                )
+
+                if robot_response:
+                    st.session_state.robot_strokes.extend(robot_response)
+                    st.session_state.interaction_history.append({
+                        'type': 'drawing',
+                        'user_strokes': len(user_stroke_data),
+                        'robot_strokes': len(robot_response),
+                        'observation': observation.value,
+                        'belief': st.session_state.hmm.get_most_likely_state()[0].value
+                    })
+
+                st.session_state.environment.step()
+
+    with col2:
+        st.markdown("#### Robot's Mind")
+
+        # Display current belief
+        belief_dict = st.session_state.hmm.get_belief_dict()
+        most_likely, confidence = st.session_state.hmm.get_most_likely_state()
+
+        st.metric("Inferred State", most_likely.value, f"{confidence:.1%} confidence")
+
+        # Belief distribution
+        st.markdown("**Belief Distribution:**")
+        for state, prob in belief_dict.items():
+            st.progress(prob, text=f"{state}: {prob:.2%}")
+
+        st.markdown("---")
+
+        # Canvas stats
+        canvas_state = st.session_state.environment.get_canvas_state()
+        st.markdown("**Canvas Statistics:**")
+        st.write(f"Your strokes: {canvas_state.patient_strokes}")
+        st.write(f"Robot strokes: {canvas_state.robot_strokes}")
+        st.write(f"Coverage: {canvas_state.coverage:.1%}")
+
+        st.markdown("---")
+
+        # Recent interactions
+        st.markdown("**Recent Interactions:**")
+        if st.session_state.interaction_history:
+            for i, interaction in enumerate(reversed(st.session_state.interaction_history[-5:])):
+                if interaction['type'] == 'drawing':
+                    st.text(f"Draw → {interaction['observation']}")
+                    st.text(f"  Belief: {interaction['belief']}")
+                    st.text(f"  Robot: {interaction['robot_strokes']} strokes")
+                else:
+                    st.text(f"Prompt: {interaction['content'][:30]}...")
+                    st.text(f"  Robot: {interaction['response']} strokes")
+                st.markdown("---")
+        else:
+            st.info("Start drawing to see interactions!")
+
+
+def process_user_strokes(canvas_objects):
+    """Convert canvas drawing objects to stroke format."""
+    strokes = []
+
+    for obj in canvas_objects:
+        if obj['type'] == 'path':
+            # Extract path information
+            path_data = obj.get('path', [])
+            if not path_data:
+                continue
+
+            # Get approximate position (center of path)
+            points = []
+            for segment in path_data:
+                if len(segment) >= 3:
+                    points.append((segment[1], segment[2]))
+
+            if not points:
+                continue
+
+            avg_x = sum(p[0] for p in points) / len(points)
+            avg_y = sum(p[1] for p in points) / len(points)
+
+            # Convert color
+            color = convert_hex_to_color(obj.get('stroke', '#000000'))
+
+            # Estimate size from stroke width
+            size = int(obj.get('strokeWidth', 10))
+
+            strokes.append({
+                'position': (int(avg_x), int(avg_y)),
+                'color': color,
+                'shape': Shape.CIRCLE,  # Default shape
+                'size': size
+            })
+
+    return strokes
+
+
+def convert_hex_to_color(hex_color):
+    """Convert hex color to nearest Color enum using color distance."""
+    def hex_to_rgb(hex_str):
+        """Convert hex string to RGB tuple."""
+        hex_str = hex_str.lstrip('#')
+        if len(hex_str) == 3:
+            hex_str = ''.join([c*2 for c in hex_str])
+        try:
+            return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+        except:
+            return (255, 0, 0)  # Default to red if parsing fails
+
+    def color_distance(rgb1, rgb2):
+        """Calculate Euclidean distance between two RGB colors."""
+        return sum((a - b) ** 2 for a, b in zip(rgb1, rgb2)) ** 0.5
+
+    # Convert input color to RGB
+    input_rgb = hex_to_rgb(hex_color)
+
+    # Map each Color enum to its RGB value
+    color_map = {
+        Color.RED: hex_to_rgb(Color.RED.value),
+        Color.BLUE: hex_to_rgb(Color.BLUE.value),
+        Color.YELLOW: hex_to_rgb(Color.YELLOW.value),
+        Color.GREEN: hex_to_rgb(Color.GREEN.value),
+        Color.PURPLE: hex_to_rgb(Color.PURPLE.value),
+        Color.ORANGE: hex_to_rgb(Color.ORANGE.value),
+    }
+
+    # Find the closest color
+    closest_color = min(color_map.items(), key=lambda x: color_distance(input_rgb, x[1]))
+    return closest_color[0]
+
+
+def infer_observation_from_drawing(stroke_data):
+    """Infer patient observation from drawing activity."""
+    if not stroke_data:
+        return Observation.IDLE
+
+    num_strokes = len(stroke_data)
+
+    if num_strokes >= 3:
+        return Observation.LONG_STROKE
+    elif num_strokes >= 1:
+        return Observation.SHORT_STROKE
+    else:
+        return Observation.DRAWING
+
+
+def get_robot_response(observation, hmm, robot, environment):
+    """Get robot's response to user drawing."""
+    # Update HMM belief
+    hmm.update_belief(observation)
+
+    # Get canvas strokes for intelligent painting
+    canvas_strokes = [s.to_dict() for s in environment.canvas.strokes]
+
+    # Update robot perception
+    canvas_state = environment.get_canvas_state()
+    robot.perceive(
+        hmm=hmm,
+        canvas_state=canvas_state.to_dict(),
+        idle_duration=environment.idle_duration,
+        turn_taking_smooth=environment.is_turn_taking_smooth(),
+        canvas_strokes=canvas_strokes
+    )
+
+    # Deliberate and plan
+    robot.deliberate()
+    robot.plan()
+
+    # Execute action
+    action, params = robot.execute()
+
+    # Apply robot action to environment
+    environment.apply_robot_action(action, params)
+
+    # Return robot strokes if any were created
+    robot_strokes = []
+    if params and 'position' in params:
+        robot_strokes.append({
+            'position': params['position'],
+            'color': params.get('color', Color.RED),
+            'shape': params.get('shape', Shape.CIRCLE),
+            'size': params.get('size', 20),
+            'agent': 'robot'
+        })
+
+    return robot_strokes
+
+
+def handle_text_prompt(prompt, environment, intelligent_painter):
+    """Handle text prompt from user to robot using intelligent painter."""
+    # Get current canvas strokes
+    canvas_strokes = [s.to_dict() for s in environment.canvas.strokes]
+
+    # Use intelligent painter to generate strokes from prompt
+    generated_strokes = intelligent_painter.generate_from_prompt(
+        strokes=canvas_strokes,
+        prompt=prompt
+    )
+
+    # Add generated strokes to environment
+    robot_strokes = []
+    for stroke_params in generated_strokes:
+        environment.canvas.add_stroke(
+            agent='robot',
+            position=stroke_params['position'],
+            color=stroke_params['color'],
+            shape=stroke_params['shape'],
+            size=stroke_params['size'],
+            timestamp=environment.current_timestep
+        )
+
+        robot_strokes.append({
+            **stroke_params,
+            'agent': 'robot'
+        })
+
+    environment.step()
+
+    return robot_strokes
 
 
 if __name__ == '__main__':

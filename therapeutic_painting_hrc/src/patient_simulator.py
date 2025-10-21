@@ -5,6 +5,7 @@ and observable behaviors during therapeutic painting session.
 
 from typing import Dict, Optional, Tuple
 import numpy as np
+import random
 
 from utils import (
     PatientState,
@@ -306,8 +307,8 @@ class PatientSimulator:
                     np.random.randint(50, 750),
                     np.random.randint(50, 550)
                 ),
-                'color': np.random.choice(list(Color)),
-                'shape': np.random.choice(list(Shape)),
+                'color': random.choice(list(Color)),
+                'shape': random.choice(list(Shape)),
                 'size': stroke_size
             }
 

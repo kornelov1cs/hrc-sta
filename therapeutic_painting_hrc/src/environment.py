@@ -5,6 +5,7 @@ Manages the state of the collaborative painting session.
 
 from typing import List, Dict, Tuple, Optional
 import numpy as np
+import random
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -24,11 +25,15 @@ class Stroke:
 
     def to_dict(self) -> Dict:
         """Convert stroke to dictionary for logging."""
+        # Handle both enum and string values (for backward compatibility)
+        color_value = self.color.value if hasattr(self.color, 'value') else self.color
+        shape_value = self.shape.value if hasattr(self.shape, 'value') else self.shape
+
         return {
             'agent': self.agent,
             'position': self.position,
-            'color': self.color.value,
-            'shape': self.shape.value,
+            'color': color_value,
+            'shape': shape_value,
             'size': self.size,
             'timestamp': self.timestamp
         }
@@ -225,8 +230,8 @@ class TherapyEnvironment:
                     np.random.randint(0, self.canvas.width),
                     np.random.randint(0, self.canvas.height)
                 )),
-                color=params.get('color', np.random.choice(list(Color))),
-                shape=params.get('shape', np.random.choice(list(Shape))),
+                color=params.get('color', random.choice(list(Color))),
+                shape=params.get('shape', random.choice(list(Shape))),
                 size=params.get('size', np.random.randint(10, 50)),
                 timestamp=self.current_timestep
             )
@@ -260,8 +265,8 @@ class TherapyEnvironment:
                     np.random.randint(0, self.canvas.width),
                     np.random.randint(0, self.canvas.height)
                 )),
-                color=params.get('color', np.random.choice(list(Color))),
-                shape=params.get('shape', np.random.choice(list(Shape))),
+                color=params.get('color', random.choice(list(Color))),
+                shape=params.get('shape', random.choice(list(Shape))),
                 size=params.get('size', np.random.randint(10, 50)),
                 timestamp=self.current_timestep
             )

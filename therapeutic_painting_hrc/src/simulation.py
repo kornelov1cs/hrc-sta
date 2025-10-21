@@ -156,11 +156,16 @@ class TherapeuticPaintingSimulation:
 
         # Update robot beliefs
         canvas_state = self.environment.get_canvas_state()
+
+        # Convert canvas strokes to dict format for intelligent painter
+        canvas_strokes = [s.to_dict() for s in self.environment.canvas.strokes]
+
         self.robot.perceive(
             hmm=self.hmm,
             canvas_state=canvas_state.to_dict(),
             idle_duration=self.environment.idle_duration,
-            turn_taking_smooth=self.environment.is_turn_taking_smooth()
+            turn_taking_smooth=self.environment.is_turn_taking_smooth(),
+            canvas_strokes=canvas_strokes
         )
 
         # Deliberate and plan

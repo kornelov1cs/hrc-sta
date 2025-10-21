@@ -6,3 +6,4 @@ scipy==1.11.1
 seaborn==0.12.2
 plotly==5.17.0
 pytest==7.4.0
+streamlit-drawable-canvas==0.9.3

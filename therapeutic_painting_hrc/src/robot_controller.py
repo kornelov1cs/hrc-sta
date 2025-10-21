@@ -5,15 +5,19 @@ and MDP-based decision-making for therapeutic painting collaboration.
 
 from typing import Dict, List, Optional, Tuple
 import numpy as np
+import random
 from dataclasses import dataclass
 
 from utils import (
     PatientState,
     RobotAction,
     Color,
-    Shape
+    Shape,
+    CANVAS_WIDTH,
+    CANVAS_HEIGHT
 )
 from intent_recognition import PatientIntentHMM
+from intelligent_painter import IntelligentPainter
 
 
 @dataclass
@@ -63,8 +67,18 @@ class RobotBDI:
         # MDP components
         self.mdp = TherapeuticPaintingMDP(mode=mode)
 
+        # Intelligent painter for generating contextual strokes
+        self.intelligent_painter = IntelligentPainter(
+            canvas_width=CANVAS_WIDTH,
+            canvas_height=CANVAS_HEIGHT,
+            mode=mode
+        )
+
         # Action history
         self.action_history: List[str] = []
+
+        # Canvas strokes (will be updated during perceive)
+        self.canvas_strokes: List[Dict] = []
 
     def _initialize_desires(self) -> List[Desire]:
         """
@@ -93,7 +107,8 @@ class RobotBDI:
         hmm: PatientIntentHMM,
         canvas_state: Dict,
         idle_duration: int,
-        turn_taking_smooth: bool
+        turn_taking_smooth: bool,
+        canvas_strokes: Optional[List[Dict]] = None
     ) -> None:
         """
         Update beliefs from sensors (HMM and environment).
@@ -103,6 +118,7 @@ class RobotBDI:
             canvas_state: Current canvas state
             idle_duration: Consecutive idle timesteps
             turn_taking_smooth: Whether turn-taking is alternating
+            canvas_strokes: List of all canvas strokes for intelligent painting
         """
         most_likely, confidence = hmm.get_most_likely_state()
 
@@ -117,6 +133,10 @@ class RobotBDI:
             'turn_taking_smooth': turn_taking_smooth,
             'belief_entropy': hmm.get_belief_entropy()
         })
+
+        # Store canvas strokes for intelligent painting
+        if canvas_strokes is not None:
+            self.canvas_strokes = canvas_strokes
 
     def deliberate(self) -> Desire:
         """
@@ -232,7 +252,7 @@ class RobotBDI:
 
     def _generate_action_params(self, action: RobotAction) -> Dict:
         """
-        Generate parameters for a robot action.
+        Generate parameters for a robot action using intelligent painter.
 
         Args:
             action: Robot action to parameterize
@@ -248,24 +268,42 @@ class RobotBDI:
         ]
 
         if action in painting_actions:
-            return {
-                'position': (
-                    np.random.randint(50, 750),
-                    np.random.randint(50, 550)
-                ),
-                'color': np.random.choice(list(Color)),
-                'shape': np.random.choice(list(Shape)),
-                'size': np.random.randint(20, 40)
-            }
+            # Use intelligent painter to generate contextual stroke
+            patient_state = self.beliefs.get('most_likely_patient_state')
+
+            # Determine action type for intelligent painter
+            if action == RobotAction.INITIATE_PAINT:
+                action_type = 'paint'
+            elif action == RobotAction.CONTINUE_PATIENT:
+                action_type = 'continue'
+            else:  # RESPOND_TO_PROMPT
+                action_type = 'suggest'
+
+            return self.intelligent_painter.generate_stroke(
+                strokes=self.canvas_strokes,
+                patient_state=patient_state,
+                action_type=action_type
+            )
 
         elif action == RobotAction.SUGGEST_COLOR:
+            # Use intelligent painter's color analysis
+            from stroke_analyzer import StrokeAnalyzer
+            analyzer = StrokeAnalyzer()
+            analysis = analyzer.analyze(self.canvas_strokes)
+
+            suggested_color = (
+                analysis.suggested_colors[0]
+                if analysis.suggested_colors
+                else random.choice(list(Color))
+            )
+
             return {
-                'suggested_color': np.random.choice(list(Color))
+                'suggested_color': suggested_color
             }
 
         elif action == RobotAction.SUGGEST_SHAPE:
             return {
-                'suggested_shape': np.random.choice(list(Shape))
+                'suggested_shape': random.choice([Shape.CIRCLE, Shape.SQUARE, Shape.LINE])
             }
 
         else:
