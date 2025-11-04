@@ -10,8 +10,12 @@ import pandas as pd
 import numpy as np
 from streamlit_drawable_canvas import st_canvas
 
-# Add src to path
+# Add src and components to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'components'))
+
+# Import fabric canvas component
+from fabric_canvas import fabric_canvas
 
 from simulation import TherapeuticPaintingSimulation
 from utils import PatientState, Color, Shape, Observation
@@ -558,6 +562,8 @@ def interactive_drawing_interface():
         st.session_state.robot_strokes = []
         st.session_state.user_strokes = []
         st.session_state.interaction_history = []
+        st.session_state.fabric_robot_strokes = []  # For fabric canvas
+        st.session_state.last_stroke_id = None  # Track last processed stroke
 
     # Sidebar controls
     st.sidebar.markdown("---")
@@ -621,135 +627,123 @@ def interactive_drawing_interface():
         st.session_state.hmm.reset()
         st.session_state.environment = TherapyEnvironment(robot_mode=robot_mode)
         st.session_state.interaction_history = []
+        st.session_state.fabric_robot_strokes = []
+        st.session_state.last_stroke_id = None
         st.rerun()
 
     # Main canvas area
     col1, col2 = st.columns([2, 1])
 
     with col1:
-        st.markdown("#### Your Canvas")
+        st.markdown("#### 🎨 Collaborative Canvas")
+        st.markdown("*Draw with your mouse - robot strokes appear in real-time on the same canvas!*")
 
-        # Create canvas
-        canvas_result = st_canvas(
-            fill_color="rgba(255, 255, 255, 0)",
-            stroke_width=stroke_width,
-            stroke_color=stroke_color,
-            background_color="#FFFFFF",
-            height=600,
+        # Create fabric canvas with robot strokes
+        canvas_result = fabric_canvas(
             width=800,
-            drawing_mode="freedraw",
-            key=f"canvas_{st.session_state.canvas_key}",
+            height=600,
+            brush_color=stroke_color,
+            brush_size=stroke_width,
+            robot_strokes=st.session_state.fabric_robot_strokes,
+            clear_canvas=False,
+            key=f"fabric_canvas_{st.session_state.canvas_key}"
         )
 
-        # Display combined visualization with robot strokes
-        st.markdown("#### Collaborative Painting (with Robot)")
-        all_strokes = [s.to_dict() for s in st.session_state.environment.canvas.strokes]
-        if all_strokes:
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots(figsize=(10, 7.5))
-            ax.set_xlim(0, 800)
-            ax.set_ylim(0, 600)
-            ax.set_aspect('equal')
-            ax.set_facecolor('white')
-            ax.invert_yaxis()  # Match canvas coordinates
+        # Process canvas changes from fabric.js
+        if canvas_result is not None and canvas_result.get('type') == 'new_stroke':
+            stroke_data = canvas_result.get('data', {})
+            stroke_id = stroke_data.get('id')
 
-            # Plot strokes
-            for stroke in all_strokes:
-                x, y = stroke['position']
-                size = stroke['size']
+            # Only process if this is a new stroke we haven't seen
+            if stroke_id and stroke_id != st.session_state.last_stroke_id:
+                st.session_state.last_stroke_id = stroke_id
 
-                # Get color value
-                color_val = stroke['color']
-                if isinstance(color_val, str):
-                    color_to_use = color_val
-                else:
-                    # Map Color enum names to hex
-                    color_map = {
-                        'Red': '#FF6B6B',
-                        'Blue': '#4ECDC4',
-                        'Yellow': '#FFE66D',
-                        'Green': '#95E1D3',
-                        'Purple': '#AA96DA',
-                        'Orange': '#FCBF49'
-                    }
-                    color_to_use = color_map.get(color_val, '#FF6B6B')
+                # Extract stroke information from fabric.js path data
+                path_data = stroke_data.get('path', [])
+                if path_data:
+                    # Get approximate position (center of path)
+                    points = []
+                    for segment in path_data:
+                        if len(segment) >= 3:
+                            points.append((segment[1], segment[2]))
 
-                agent = stroke['agent']
+                    if points:
+                        avg_x = sum(p[0] for p in points) / len(points)
+                        avg_y = sum(p[1] for p in points) / len(points)
 
-                # Different markers for user vs robot
-                if agent == 'patient':
-                    marker = 'o'
-                    alpha = 0.7
-                    edgecolor = 'darkred'
-                else:
-                    marker = 's'
-                    alpha = 0.8
-                    edgecolor = 'darkblue'
-                    linewidth = 2
+                        # Convert color and create stroke
+                        color = convert_hex_to_color(stroke_data.get('color', '#FF0000'))
+                        size = int(stroke_data.get('width', 5))
 
-                ax.scatter(x, y, s=size**2, c=color_to_use, marker=marker,
-                          alpha=alpha, edgecolors=edgecolor, linewidths=linewidth if agent == 'robot' else 1)
+                        user_stroke = {
+                            'position': (int(avg_x), int(avg_y)),
+                            'color': color,
+                            'shape': Shape.CIRCLE,
+                            'size': size
+                        }
 
-            # Legend
-            from matplotlib.patches import Patch
-            legend_elements = [
-                Patch(facecolor='red', edgecolor='darkred', label='Your strokes'),
-                Patch(facecolor='blue', edgecolor='darkblue', label='Robot strokes', linewidth=2)
-            ]
-            ax.legend(handles=legend_elements, loc='upper right')
+                        st.session_state.user_strokes.append(user_stroke)
 
-            ax.set_xlabel('X Position')
-            ax.set_ylabel('Y Position')
-            ax.grid(True, alpha=0.2)
-            plt.tight_layout()
+                        # Update environment
+                        st.session_state.environment.canvas.add_stroke(
+                            agent='patient',
+                            position=user_stroke['position'],
+                            color=user_stroke['color'],
+                            shape=user_stroke['shape'],
+                            size=user_stroke['size'],
+                            timestamp=st.session_state.environment.current_timestep
+                        )
 
-            st.pyplot(fig)
-            plt.close()
+                        # Infer user state and get robot response
+                        observation = infer_observation_from_drawing([user_stroke])
+                        robot_response = get_robot_response(
+                            observation,
+                            st.session_state.hmm,
+                            st.session_state.robot,
+                            st.session_state.environment
+                        )
 
-        # Process canvas changes
-        if canvas_result.json_data is not None:
-            objects = canvas_result.json_data.get("objects", [])
+                        # Convert robot response to fabric canvas format
+                        if robot_response:
+                            for robot_stroke in robot_response:
+                                # Convert Color enum to hex if needed
+                                robot_color = robot_stroke['color']
+                                if not isinstance(robot_color, str):
+                                    color_map = {
+                                        Color.RED: '#FF6B6B',
+                                        Color.BLUE: '#4ECDC4',
+                                        Color.YELLOW: '#FFE66D',
+                                        Color.GREEN: '#95E1D3',
+                                        Color.PURPLE: '#AA96DA',
+                                        Color.ORANGE: '#FCBF49'
+                                    }
+                                    robot_color = color_map.get(robot_color, '#FF6B6B')
 
-            # Check if user added new strokes
-            if len(objects) > st.session_state.stroke_count:
-                new_strokes = objects[st.session_state.stroke_count:]
-                st.session_state.stroke_count = len(objects)
+                                # Convert Shape enum to string if needed
+                                robot_shape = robot_stroke.get('shape', Shape.SQUARE)
+                                if not isinstance(robot_shape, str):
+                                    robot_shape = robot_shape.value.lower()
 
-                # Process new user strokes
-                user_stroke_data = process_user_strokes(new_strokes)
-                st.session_state.user_strokes.extend(user_stroke_data)
+                                fabric_stroke = {
+                                    'x': robot_stroke['position'][0],
+                                    'y': robot_stroke['position'][1],
+                                    'color': robot_color,
+                                    'size': robot_stroke['size'],
+                                    'shape': robot_shape
+                                }
+                                st.session_state.fabric_robot_strokes.append(fabric_stroke)
 
-                # Update environment
-                for stroke in user_stroke_data:
-                    st.session_state.environment.canvas.add_stroke(
-                        agent='patient',
-                        position=stroke['position'],
-                        color=stroke['color'],
-                        shape=stroke['shape'],
-                        size=stroke['size'],
-                        timestamp=st.session_state.environment.current_timestep
-                    )
+                            st.session_state.robot_strokes.extend(robot_response)
+                            st.session_state.interaction_history.append({
+                                'type': 'drawing',
+                                'user_strokes': 1,
+                                'robot_strokes': len(robot_response),
+                                'observation': observation.value,
+                                'belief': st.session_state.hmm.get_most_likely_state()[0].value
+                            })
 
-                # Infer user state and get robot response
-                observation = infer_observation_from_drawing(user_stroke_data)
-                robot_response = get_robot_response(
-                    observation,
-                    st.session_state.hmm,
-                    st.session_state.robot,
-                    st.session_state.environment
-                )
-
-                if robot_response:
-                    st.session_state.robot_strokes.extend(robot_response)
-                    st.session_state.interaction_history.append({
-                        'type': 'drawing',
-                        'user_strokes': len(user_stroke_data),
-                        'robot_strokes': len(robot_response),
-                        'observation': observation.value,
-                        'belief': st.session_state.hmm.get_most_likely_state()[0].value
-                    })
-
-                st.session_state.environment.step()
+                        st.session_state.environment.step()
+                        st.rerun()  # Refresh to show robot strokes
 
     with col2:
         st.markdown("#### Robot's Mind")

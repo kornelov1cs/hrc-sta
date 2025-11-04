@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric Canvas Component</title>
+    <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: 'Source Sans Pro', sans-serif;
+            overflow: hidden;
+        }
+        #canvas-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+            background: white;
+        }
+        #controls {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        input[type="color"] {
+            width: 50px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="range"] {
+            width: 120px;
+        }
+        button {
+            padding: 6px 12px;
+            background: #ff4b4b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #ff3333;
+        }
+        .brush-size-label {
+            min-width: 35px;
+            text-align: center;
+            font-weight: 600;
+            color: #555;
+        }
+        #mode-indicator {
+            font-size: 12px;
+            color: #666;
+            padding: 4px 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div class="control-group">
+            <label for="brush-color">Brush Color:</label>
+            <input type="color" id="brush-color" value="#FF0000">
+        </div>
+        <div class="control-group">
+            <label for="brush-size">Size:</label>
+            <input type="range" id="brush-size" min="1" max="50" value="5">
+            <span class="brush-size-label" id="brush-size-value">5</span>
+        </div>
+        <button id="clear-btn">Clear Canvas</button>
+        <div id="mode-indicator">Drawing Mode: Enabled</div>
+    </div>
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        // Get parameters from Streamlit
+        const urlParams = new URLSearchParams(window.location.search);
+        const width = parseInt(urlParams.get('width')) || 800;
+        const height = parseInt(urlParams.get('height')) || 600;
+        const initialColor = urlParams.get('color') || '#FF0000';
+        const initialBrushSize = parseInt(urlParams.get('brushSize')) || 5;
+
+        // Initialize Fabric canvas
+        const canvas = new fabric.Canvas('canvas', {
+            isDrawingMode: true,
+            width: width,
+            height: height,
+            backgroundColor: '#ffffff'
+        });
+
+        // Configure brush
+        canvas.freeDrawingBrush.color = initialColor;
+        canvas.freeDrawingBrush.width = initialBrushSize;
+
+        // Set initial values
+        document.getElementById('brush-color').value = initialColor;
+        document.getElementById('brush-size').value = initialBrushSize;
+        document.getElementById('brush-size-value').textContent = initialBrushSize;
+
+        // Brush color control
+        document.getElementById('brush-color').addEventListener('change', (e) => {
+            canvas.freeDrawingBrush.color = e.target.value;
+        });
+
+        // Brush size control
+        const brushSizeInput = document.getElementById('brush-size');
+        const brushSizeValue = document.getElementById('brush-size-value');
+        brushSizeInput.addEventListener('input', (e) => {
+            const size = parseInt(e.target.value);
+            canvas.freeDrawingBrush.width = size;
+            brushSizeValue.textContent = size;
+        });
+
+        // Clear button
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            canvas.clear();
+            canvas.backgroundColor = '#ffffff';
+            canvas.renderAll();
+            sendStrokesToStreamlit();
+        });
+
+        // Track user strokes and send to Streamlit
+        let strokeCount = 0;
+        canvas.on('path:created', (e) => {
+            const path = e.path;
+
+            // Mark this as a user stroke
+            path.set({
+                strokeType: 'user',
+                strokeId: `user_${Date.now()}_${strokeCount++}`
+            });
+
+            // Extract stroke data
+            const strokeData = {
+                type: 'user',
+                id: path.strokeId,
+                color: path.stroke,
+                width: path.strokeWidth,
+                path: path.path,
+                timestamp: Date.now()
+            };
+
+            // Send to Streamlit
+            sendStrokeToStreamlit(strokeData);
+        });
+
+        // Function to add robot stroke to canvas
+        function addRobotStroke(strokeData) {
+            const { x, y, color, size, shape } = strokeData;
+
+            let fabricObject;
+
+            switch(shape) {
+                case 'circle':
+                    fabricObject = new fabric.Circle({
+                        left: x - size/2,
+                        top: y - size/2,
+                        radius: size/2,
+                        fill: color,
+                        selectable: false,
+                        strokeType: 'robot'
+                    });
+                    break;
+
+                case 'square':
+                    fabricObject = new fabric.Rect({
+                        left: x - size/2,
+                        top: y - size/2,
+                        width: size,
+                        height: size,
+                        fill: color,
+                        selectable: false,
+                        strokeType: 'robot'
+                    });
+                    break;
+
+                case 'line':
+                    const angle = Math.random() * 360;
+                    const lineLength = size * 2;
+                    fabricObject = new fabric.Line([
+                        x - lineLength/2, y,
+                        x + lineLength/2, y
+                    ], {
+                        stroke: color,
+                        strokeWidth: size * 0.3,
+                        selectable: false,
+                        strokeType: 'robot',
+                        angle: angle
+                    });
+                    break;
+
+                case 'splash':
+                    // Create multiple small circles for splash effect
+                    const splashGroup = [];
+                    const numDrops = 5 + Math.floor(Math.random() * 5);
+                    for(let i = 0; i < numDrops; i++) {
+                        const offsetX = (Math.random() - 0.5) * size * 2;
+                        const offsetY = (Math.random() - 0.5) * size * 2;
+                        const dropSize = size * 0.2 * (0.5 + Math.random() * 0.5);
+                        splashGroup.push(new fabric.Circle({
+                            left: x + offsetX - dropSize/2,
+                            top: y + offsetY - dropSize/2,
+                            radius: dropSize/2,
+                            fill: color,
+                            selectable: false,
+                            strokeType: 'robot'
+                        }));
+                    }
+                    splashGroup.forEach(drop => canvas.add(drop));
+                    canvas.renderAll();
+                    return;
+
+                default: // curve or default to circle
+                    fabricObject = new fabric.Circle({
+                        left: x - size/2,
+                        top: y - size/2,
+                        radius: size/2,
+                        fill: color,
+                        selectable: false,
+                        strokeType: 'robot'
+                    });
+            }
+
+            if(fabricObject) {
+                canvas.add(fabricObject);
+                canvas.renderAll();
+            }
+        }
+
+        // Communication with Streamlit
+        function sendStrokeToStreamlit(strokeData) {
+            window.parent.postMessage({
+                type: 'streamlit:setComponentValue',
+                value: {
+                    type: 'new_stroke',
+                    data: strokeData
+                }
+            }, '*');
+        }
+
+        function sendStrokesToStreamlit() {
+            const objects = canvas.getObjects();
+            const strokes = objects.map((obj, idx) => ({
+                type: obj.strokeType || 'unknown',
+                id: obj.strokeId || `obj_${idx}`,
+                // Additional data can be serialized here
+            }));
+
+            window.parent.postMessage({
+                type: 'streamlit:setComponentValue',
+                value: {
+                    type: 'all_strokes',
+                    data: strokes
+                }
+            }, '*');
+        }
+
+        // Listen for robot strokes from Streamlit
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'streamlit:render') {
+                const args = event.data.args;
+
+                if (args.robot_strokes && args.robot_strokes.length > 0) {
+                    // Add new robot strokes
+                    args.robot_strokes.forEach(stroke => {
+                        addRobotStroke(stroke);
+                    });
+                }
+
+                if (args.clear_canvas) {
+                    canvas.clear();
+                    canvas.backgroundColor = '#ffffff';
+                    canvas.renderAll();
+                }
+            }
+        });
+
+        // Notify Streamlit that component is ready
+        window.parent.postMessage({
+            type: 'streamlit:componentReady',
+            height: height + 100 // Extra space for controls
+        }, '*');
+
+        // Send initial state
+        setTimeout(() => {
+            sendStrokesToStreamlit();
+        }, 100);
+    </script>
+</body>
+</html>
