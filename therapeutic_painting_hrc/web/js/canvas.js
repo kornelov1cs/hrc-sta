@@ -23,10 +23,13 @@ const CANVAS_HEIGHT = 600;
 
 class CanvasManager {
     constructor() {
+        // Calculate responsive canvas size
+        const canvasSize = this.calculateCanvasSize();
+
         // Initialize fabric canvas
         this.canvas = new fabric.Canvas('painting-canvas', {
-            width: CANVAS_WIDTH,
-            height: CANVAS_HEIGHT,
+            width: canvasSize.width,
+            height: canvasSize.height,
             backgroundColor: '#FFFFFF',
             isDrawingMode: true,
             selection: false
@@ -53,6 +56,97 @@ class CanvasManager {
 
         // Configure initial brush
         this.updateBrush();
+
+        // Setup resize handler
+        this.setupResizeHandler();
+    }
+
+    calculateCanvasSize() {
+        // Get the canvas wrapper element
+        const wrapper = document.querySelector('.canvas-wrapper');
+        if (!wrapper) {
+            return { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+        }
+
+        // Get available space
+        const padding = 32; // Account for padding
+        const maxWidth = wrapper.clientWidth - padding;
+        const maxHeight = window.innerHeight - 400; // Reserve space for header and controls
+
+        // Calculate size maintaining aspect ratio
+        const aspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+        let width = Math.min(CANVAS_WIDTH, maxWidth);
+        let height = width / aspectRatio;
+
+        // Check if height exceeds available space
+        if (height > maxHeight && maxHeight > 200) {
+            height = maxHeight;
+            width = height * aspectRatio;
+        }
+
+        // Ensure minimum size for usability
+        const minWidth = 300;
+        const minHeight = 225;
+
+        if (width < minWidth) {
+            width = minWidth;
+            height = width / aspectRatio;
+        }
+
+        return {
+            width: Math.floor(width),
+            height: Math.floor(height)
+        };
+    }
+
+    setupResizeHandler() {
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Debounce resize events
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.resizeCanvas();
+            }, 250);
+        });
+    }
+
+    resizeCanvas() {
+        // Calculate new size
+        const newSize = this.calculateCanvasSize();
+        const currentWidth = this.canvas.width;
+        const currentHeight = this.canvas.height;
+
+        // Only resize if dimensions changed significantly
+        if (Math.abs(newSize.width - currentWidth) > 10 ||
+            Math.abs(newSize.height - currentHeight) > 10) {
+
+            // Store current state
+            const canvasState = this.canvas.toJSON([
+                '_isPatientStroke',
+                '_isRobotStroke'
+            ]);
+
+            // Calculate scale factors
+            const scaleX = newSize.width / currentWidth;
+            const scaleY = newSize.height / currentHeight;
+
+            // Resize canvas
+            this.canvas.setDimensions({
+                width: newSize.width,
+                height: newSize.height
+            });
+
+            // Scale all objects
+            this.canvas.getObjects().forEach(obj => {
+                obj.scaleX = (obj.scaleX || 1) * scaleX;
+                obj.scaleY = (obj.scaleY || 1) * scaleY;
+                obj.left = obj.left * scaleX;
+                obj.top = obj.top * scaleY;
+                obj.setCoords();
+            });
+
+            this.canvas.renderAll();
+        }
     }
 
     setupEventListeners() {

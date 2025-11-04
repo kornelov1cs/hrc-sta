@@ -72,6 +72,9 @@ class SessionManager:
         self.robot = RobotBDI(mode='proactive')  # Can be configured
         self.current_timestep = 0
         self.active_websockets: List[WebSocket] = []
+        self.idle_duration = 0
+        self.last_patient_stroke_time = 0
+        self.last_robot_stroke_time = 0
 
     def reset(self):
         """Reset session to initial state."""
@@ -79,6 +82,9 @@ class SessionManager:
         self.hmm = PatientIntentHMM()
         self.robot = RobotBDI(mode='proactive')
         self.current_timestep = 0
+        self.idle_duration = 0
+        self.last_patient_stroke_time = 0
+        self.last_robot_stroke_time = 0
 
     def add_user_stroke(self, stroke_data: StrokeRequest) -> Observation:
         """
@@ -110,6 +116,10 @@ class SessionManager:
         # Update HMM belief state
         self.hmm.update_belief(observation)
 
+        # Update tracking
+        self.idle_duration = 0  # Reset idle counter on user activity
+        self.last_patient_stroke_time = self.current_timestep
+
         self.current_timestep += 1
         return observation
 
@@ -138,68 +148,108 @@ class SessionManager:
         Returns:
             Robot action with generated strokes
         """
-        # Get canvas state
-        canvas_state = {
-            'coverage': self.canvas.get_coverage(),
-            'stroke_count': len(self.canvas.strokes),
-            'recent_activity': len([s for s in self.canvas.strokes
-                                   if self.current_timestep - s.timestamp < 5])
-        }
+        try:
+            # Calculate recent activity
+            recent_patient_strokes = len([s for s in self.canvas.strokes
+                                         if s.agent == 'patient' and
+                                         self.current_timestep - s.timestamp < 5])
+            recent_robot_strokes = len([s for s in self.canvas.strokes
+                                       if s.agent == 'robot' and
+                                       self.current_timestep - s.timestamp < 5])
 
-        # Convert strokes to dict format for robot
-        strokes_dict = [s.to_dict() for s in self.canvas.strokes]
+            # Get canvas state
+            canvas_state = {
+                'coverage': self.canvas.get_coverage(),
+                'stroke_count': len(self.canvas.strokes),
+                'recent_patient_activity': recent_patient_strokes,
+                'recent_robot_activity': recent_robot_strokes
+            }
 
-        # Robot perceives, deliberates, plans, executes
-        self.robot.perceive(self.hmm, canvas_state, strokes_dict)
-        self.robot.deliberate()
-        self.robot.plan()
-        action_type, params = self.robot.execute()
-
-        # Generate robot strokes based on action
-        robot_strokes = []
-        if action_type in [RobotAction.INITIATE_PAINT,
-                          RobotAction.CONTINUE_PATIENT,
-                          RobotAction.RESPOND_TO_PROMPT]:
-            # Generate stroke using intelligent painter
-            most_likely_state, _ = self.hmm.get_most_likely_state()
-            stroke_params = self.robot.intelligent_painter.generate_stroke(
-                strokes=strokes_dict,
-                patient_state=most_likely_state,
-                action_type=action_type.value
+            # Check turn-taking smoothness (alternating actions)
+            turn_taking_smooth = (
+                abs(self.last_patient_stroke_time - self.last_robot_stroke_time) <= 2
             )
 
-            # Add to canvas
-            color = stroke_params['color']
-            shape = stroke_params['shape']
-            position = stroke_params['position']
-            size = stroke_params['size']
+            # Increment idle duration if no recent patient activity
+            if recent_patient_strokes == 0:
+                self.idle_duration += 1
+            else:
+                self.idle_duration = 0
 
-            self.canvas.add_stroke(
-                agent="robot",
-                position=position,
-                color=color,
-                shape=shape,
-                size=size,
-                timestamp=self.current_timestep
+            # Convert strokes to dict format for robot
+            strokes_dict = [s.to_dict() for s in self.canvas.strokes]
+
+            # Robot perceives, deliberates, plans, executes
+            self.robot.perceive(
+                self.hmm,
+                canvas_state,
+                self.idle_duration,
+                turn_taking_smooth,
+                strokes_dict
             )
+            self.robot.deliberate()
+            self.robot.plan()
+            action_type, params = self.robot.execute()
 
-            # Create response stroke
-            robot_strokes.append(StrokeResponse(
-                agent="robot",
-                position=position,
-                color=color.name,
-                shape=shape.name,
-                size=size,
-                timestamp=self.current_timestep
-            ))
+            # Generate robot strokes based on action
+            robot_strokes = []
+            if action_type in [RobotAction.INITIATE_PAINT,
+                              RobotAction.CONTINUE_PATIENT,
+                              RobotAction.RESPOND_TO_PROMPT]:
+                # Generate stroke using intelligent painter
+                most_likely_state, _ = self.hmm.get_most_likely_state()
+                stroke_params = self.robot.intelligent_painter.generate_stroke(
+                    strokes=strokes_dict,
+                    patient_state=most_likely_state,
+                    action_type=action_type.value
+                )
 
-        self.current_timestep += 1
+                # Add to canvas
+                color = stroke_params['color']
+                shape = stroke_params['shape']
+                position = stroke_params['position']
+                size = stroke_params['size']
 
-        return RobotActionResponse(
-            action_type=action_type.value,
-            strokes=robot_strokes,
-            message=self._get_action_message(action_type)
-        )
+                self.canvas.add_stroke(
+                    agent="robot",
+                    position=position,
+                    color=color,
+                    shape=shape,
+                    size=size,
+                    timestamp=self.current_timestep
+                )
+
+                # Create response stroke - handle both enum and string
+                color_name = color.name if hasattr(color, 'name') else str(color)
+                shape_name = shape.name if hasattr(shape, 'name') else str(shape)
+
+                robot_strokes.append(StrokeResponse(
+                    agent="robot",
+                    position=position,
+                    color=color_name,
+                    shape=shape_name,
+                    size=size,
+                    timestamp=self.current_timestep
+                ))
+
+                # Update robot stroke tracking
+                self.last_robot_stroke_time = self.current_timestep
+
+            self.current_timestep += 1
+
+            # Handle action_type - could be enum or string
+            action_value = action_type.value if hasattr(action_type, 'value') else str(action_type)
+
+            return RobotActionResponse(
+                action_type=action_value,
+                strokes=robot_strokes,
+                message=self._get_action_message(action_type)
+            )
+        except Exception as e:
+            print(f"Error in get_robot_action: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     def _get_action_message(self, action: RobotAction) -> str:
         """Get human-readable message for robot action."""
@@ -264,13 +314,16 @@ async def process_stroke(stroke: StrokeRequest):
         if session.active_websockets:
             message = WebSocketMessage(
                 type="robot_action",
-                data=robot_response.dict()
+                data=robot_response.model_dump()
             )
-            await broadcast_message(message.dict())
+            await broadcast_message(message.model_dump())
 
         return robot_response
 
     except Exception as e:
+        print(f"Error in process_stroke: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -319,6 +372,9 @@ async def process_prompt(prompt: PromptRequest):
             timestamp=session.current_timestep
         )
 
+        # Update robot stroke tracking
+        session.last_robot_stroke_time = session.current_timestep
+
         session.current_timestep += 1
 
         response = RobotActionResponse(
@@ -331,13 +387,16 @@ async def process_prompt(prompt: PromptRequest):
         if session.active_websockets:
             message = WebSocketMessage(
                 type="robot_action",
-                data=response.dict()
+                data=response.model_dump()
             )
-            await broadcast_message(message.dict())
+            await broadcast_message(message.model_dump())
 
         return response
 
     except Exception as e:
+        print(f"Error in process_prompt: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -358,7 +417,7 @@ async def reset_session():
             type="session_reset",
             data={}
         )
-        await broadcast_message(message.dict())
+        await broadcast_message(message.model_dump())
 
     return {"status": "success", "message": "Session reset"}
 
@@ -400,7 +459,7 @@ async def websocket_endpoint(websocket: WebSocket):
         initial_state = session.get_belief_state()
         await websocket.send_json({
             "type": "belief_update",
-            "data": initial_state.dict()
+            "data": initial_state.model_dump()
         })
 
         while True:
@@ -420,14 +479,14 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Send robot action
                 await websocket.send_json({
                     "type": "robot_action",
-                    "data": robot_response.dict()
+                    "data": robot_response.model_dump()
                 })
 
                 # Send updated belief state
                 belief_state = session.get_belief_state()
                 await websocket.send_json({
                     "type": "belief_update",
-                    "data": belief_state.dict()
+                    "data": belief_state.model_dump()
                 })
 
             elif message_type == "prompt":
@@ -439,7 +498,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     await websocket.send_json({
                         "type": "robot_action",
-                        "data": robot_response.dict()
+                        "data": robot_response.model_dump()
                     })
 
             elif message_type == "get_state":
@@ -447,17 +506,24 @@ async def websocket_endpoint(websocket: WebSocket):
                 belief_state = session.get_belief_state()
                 await websocket.send_json({
                     "type": "belief_update",
-                    "data": belief_state.dict()
+                    "data": belief_state.model_dump()
                 })
 
     except WebSocketDisconnect:
         session.active_websockets.remove(websocket)
     except Exception as e:
-        await websocket.send_json({
-            "type": "error",
-            "data": {"message": str(e)}
-        })
-        session.active_websockets.remove(websocket)
+        print(f"WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "data": {"message": str(e)}
+            })
+        except:
+            pass
+        if websocket in session.active_websockets:
+            session.active_websockets.remove(websocket)
 
 
 # ============================================================================
