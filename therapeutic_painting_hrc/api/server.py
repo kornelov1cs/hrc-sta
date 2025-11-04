@@ -191,17 +191,40 @@ class SessionManager:
             self.robot.plan()
             action_type, params = self.robot.execute()
 
+            # Debug logging
+            print(f"Robot action: {action_type}, params: {params}")
+            print(f"Canvas state: {canvas_state}")
+            print(f"Idle duration: {self.idle_duration}")
+            most_likely_state, confidence = self.hmm.get_most_likely_state()
+            print(f"Patient state: {most_likely_state} (confidence: {confidence:.2f})")
+
             # Generate robot strokes based on action
             robot_strokes = []
-            if action_type in [RobotAction.INITIATE_PAINT,
-                              RobotAction.CONTINUE_PATIENT,
-                              RobotAction.RESPOND_TO_PROMPT]:
+
+            # Force robot to paint more often in response to user activity
+            # If robot chooses non-painting actions but user just drew, make it paint instead
+            # Handle both enum and string action types
+            action_value = action_type.value if hasattr(action_type, 'value') else str(action_type)
+
+            if (action_value in ['Wait', 'Observe', 'SuggestColor', 'SuggestShape'] and
+                recent_patient_strokes > 0):
+                print(f"Overriding {action_type} to CONTINUE_PATIENT due to recent user activity")
+                action_type = RobotAction.CONTINUE_PATIENT
+                action_value = action_type.value
+
+            # Check if we should paint (handle both enum and string)
+            should_paint = (
+                action_type in [RobotAction.INITIATE_PAINT, RobotAction.CONTINUE_PATIENT, RobotAction.RESPOND_TO_PROMPT] or
+                action_value in ['InitiatePaint', 'ContinuePatient', 'RespondToPrompt']
+            )
+
+            if should_paint:
                 # Generate stroke using intelligent painter
                 most_likely_state, _ = self.hmm.get_most_likely_state()
                 stroke_params = self.robot.intelligent_painter.generate_stroke(
                     strokes=strokes_dict,
                     patient_state=most_likely_state,
-                    action_type=action_type.value
+                    action_type=action_value
                 )
 
                 # Add to canvas
@@ -237,9 +260,6 @@ class SessionManager:
 
             self.current_timestep += 1
 
-            # Handle action_type - could be enum or string
-            action_value = action_type.value if hasattr(action_type, 'value') else str(action_type)
-
             return RobotActionResponse(
                 action_type=action_value,
                 strokes=robot_strokes,
@@ -251,18 +271,21 @@ class SessionManager:
             traceback.print_exc()
             raise
 
-    def _get_action_message(self, action: RobotAction) -> str:
-        """Get human-readable message for robot action."""
+    def _get_action_message(self, action) -> str:
+        """Get human-readable message for robot action (handles both enum and string)."""
+        # Convert to string value if it's an enum
+        action_str = action.value if hasattr(action, 'value') else str(action)
+
         messages = {
-            RobotAction.INITIATE_PAINT: "Robot is starting to paint",
-            RobotAction.CONTINUE_PATIENT: "Robot is continuing your work",
-            RobotAction.SUGGEST_COLOR: "Robot suggests trying a new color",
-            RobotAction.SUGGEST_SHAPE: "Robot suggests a different shape",
-            RobotAction.RESPOND_TO_PROMPT: "Robot is responding to your prompt",
-            RobotAction.WAIT: "Robot is waiting for you",
-            RobotAction.OBSERVE: "Robot is observing your work"
+            "InitiatePaint": "Robot is starting to paint",
+            "ContinuePatient": "Robot is continuing your work",
+            "SuggestColor": "Robot suggests trying a new color",
+            "SuggestShape": "Robot suggests a different shape",
+            "RespondToPrompt": "Robot is responding to your prompt",
+            "Wait": "Robot is waiting for you",
+            "Observe": "Robot is observing your work"
         }
-        return messages.get(action, "Robot is thinking")
+        return messages.get(action_str, "Robot is thinking")
 
     def get_belief_state(self) -> BeliefStateResponse:
         """Get current belief state distribution."""
@@ -339,57 +362,54 @@ async def process_prompt(prompt: PromptRequest):
         Robot action with generated strokes
     """
     try:
-        # Generate stroke from prompt
+        # Generate strokes from prompt (returns a list)
         strokes_dict = [s.to_dict() for s in session.canvas.strokes]
-        most_likely_state, _ = session.hmm.get_most_likely_state()
-        stroke_params = session.robot.intelligent_painter.generate_from_prompt(
-            prompt=prompt.prompt,
+        generated_strokes = session.robot.intelligent_painter.generate_from_prompt(
             strokes=strokes_dict,
-            patient_state=most_likely_state
+            prompt=prompt.prompt
         )
 
-        # Add to canvas
-        color = stroke_params['color']
-        shape = stroke_params['shape']
-        position = stroke_params['position']
-        size = stroke_params['size']
+        # Process each generated stroke
+        robot_strokes = []
+        for stroke_params in generated_strokes:
+            # Add to canvas
+            color = stroke_params['color']
+            shape = stroke_params['shape']
+            position = stroke_params['position']
+            size = stroke_params['size']
 
-        session.canvas.add_stroke(
-            agent="robot",
-            position=position,
-            color=color,
-            shape=shape,
-            size=size,
-            timestamp=session.current_timestep
-        )
+            session.canvas.add_stroke(
+                agent="robot",
+                position=position,
+                color=color,
+                shape=shape,
+                size=size,
+                timestamp=session.current_timestep
+            )
 
-        robot_stroke = StrokeResponse(
-            agent="robot",
-            position=position,
-            color=color.name,
-            shape=shape.name,
-            size=size,
-            timestamp=session.current_timestep
-        )
+            # Handle both enum and string for color/shape
+            color_name = color.name if hasattr(color, 'name') else str(color)
+            shape_name = shape.name if hasattr(shape, 'name') else str(shape)
+
+            robot_strokes.append(StrokeResponse(
+                agent="robot",
+                position=position,
+                color=color_name,
+                shape=shape_name,
+                size=size,
+                timestamp=session.current_timestep
+            ))
+
+            session.current_timestep += 1
 
         # Update robot stroke tracking
         session.last_robot_stroke_time = session.current_timestep
 
-        session.current_timestep += 1
-
         response = RobotActionResponse(
             action_type="RESPOND_TO_PROMPT",
-            strokes=[robot_stroke],
-            message=f"Robot created: {prompt.prompt}"
+            strokes=robot_strokes,
+            message=f"Robot painted {len(robot_strokes)} stroke(s) based on: '{prompt.prompt}'"
         )
-
-        # Broadcast to WebSocket clients
-        if session.active_websockets:
-            message = WebSocketMessage(
-                type="robot_action",
-                data=response.model_dump()
-            )
-            await broadcast_message(message.model_dump())
 
         return response
 
