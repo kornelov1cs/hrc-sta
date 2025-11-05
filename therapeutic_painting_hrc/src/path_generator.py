@@ -7,7 +7,6 @@ for robot drawing strokes, making them appear more human-like and artistic.
 
 import numpy as np
 from typing import List, Tuple
-import math
 
 
 class PathGenerator:

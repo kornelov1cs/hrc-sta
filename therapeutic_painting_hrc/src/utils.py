@@ -3,7 +3,7 @@ Utility functions and constants for the therapeutic painting simulation.
 """
 
 from enum import Enum
-from typing import Dict, List, Tuple
+from typing import Dict
 import numpy as np
 
 

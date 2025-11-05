@@ -18,8 +18,9 @@ This project fulfills the HRC course requirements:
 - ✅ **Decision Layer**: Belief-Desire-Intention (BDI) architecture + Markov Decision Process (MDP)
 - ✅ **SENSE-THINK-ACT Loop**: Complete implementation with logging
 - ✅ **Scenario Documentation**: Therapeutic painting with clear user states and robot tasks
-- ✅ **Reflection Document**: Comprehensive discussion in `docs/reflection.md`
+- ✅ **Reflection Document**: Comprehensive discussion in `docs/reflection.md` with diagrams and tables
 - ✅ **Visualization**: Simple but compelling web interface showing HRC concepts
+- ✅ **Code Quality**: PEP-8 compliant (verified with flake8), modular, well-commented
 
 ## Installation
 

@@ -90,6 +90,38 @@ belief(s') = α * P(obs|s') * Σ_s P(s'|s) * belief(s)
 
 The HMM successfully handles partial observability by maintaining a probability distribution over all possible patient states rather than committing to a single hypothesis.
 
+```mermaid
+stateDiagram-v2
+    [*] --> Engaged
+    Engaged --> Engaged: 0.7
+    Engaged --> Satisfied: 0.15
+    Engaged --> NeedsSupport: 0.10
+    Engaged --> Hesitant: 0.05
+
+    NeedsSupport --> Engaged: 0.3
+    NeedsSupport --> NeedsSupport: 0.4
+    NeedsSupport --> Hesitant: 0.2
+    NeedsSupport --> Frustrated: 0.1
+
+    Hesitant --> Engaged: 0.2
+    Hesitant --> NeedsSupport: 0.25
+    Hesitant --> Hesitant: 0.4
+    Hesitant --> Frustrated: 0.15
+
+    Satisfied --> Engaged: 0.3
+    Satisfied --> Satisfied: 0.6
+    Satisfied --> NeedsSupport: 0.05
+    Satisfied --> Hesitant: 0.05
+
+    Frustrated --> Hesitant: 0.3
+    Frustrated --> NeedsSupport: 0.2
+    Frustrated --> Frustrated: 0.35
+    Frustrated --> Satisfied: 0.05
+    Frustrated --> Engaged: 0.1
+```
+
+**Figure 1: Patient State Transition Diagram.** Shows the five patient states (Engaged, NeedsSupport, Hesitant, Satisfied, Frustrated) and their baseline transition probabilities in the HMM. Self-loops indicate state persistence, while outgoing edges show possible transitions. Robot actions modify these probabilities to influence patient state evolution.
+
 #### 2.2 BDI (Belief-Desire-Intention) Architecture
 
 The robot controller uses BDI for high-level reasoning:
@@ -175,6 +207,51 @@ For each timestep:
 ```
 
 This architecture ensures clear separation of concerns while enabling complex emergent behavior.
+
+```mermaid
+graph TB
+    subgraph SENSE["🔍 SENSE Component"]
+        PatientSim["Patient Simulator<br/>(Hidden States)"]
+        Obs["Observable Behaviors<br/>Drawing, Paused, Idle, etc."]
+        Noise["Sensor Noise<br/>(10% error rate)"]
+        PatientSim --> Obs
+        Obs --> Noise
+    end
+
+    subgraph THINK["🧠 THINK Component"]
+        HMM["HMM Intent Recognition<br/>5 states × 6 observations<br/>Forward Algorithm"]
+        BDI["BDI Architecture<br/>Beliefs, Desires, Intentions"]
+        MDP["MDP Decision Layer<br/>State space + Actions<br/>Policy selection"]
+        Noise --> HMM
+        HMM --> BDI
+        BDI --> MDP
+    end
+
+    subgraph ACT["⚙️ ACT Component"]
+        RobotAction["Robot Actions<br/>Paint, Suggest, Wait, Observe"]
+        PatientAction["Patient Actions<br/>(Simulated response)"]
+        Env["Therapy Environment<br/>Canvas + Turn-taking"]
+        MDP --> RobotAction
+        RobotAction --> Env
+        Env --> PatientAction
+        PatientAction --> Env
+    end
+
+    subgraph STATE["📊 State Management"]
+        Log["Logging System<br/>JSON + Console output"]
+        Update["State Transition<br/>Robot influence on patient"]
+        Env --> Log
+        RobotAction --> Update
+        Update --> PatientSim
+    end
+
+    style SENSE fill:#e1f5ff
+    style THINK fill:#fff4e1
+    style ACT fill:#e8f5e9
+    style STATE fill:#f3e5f5
+```
+
+**Figure 2: System Architecture - SENSE-THINK-ACT Pipeline.** The architecture shows the complete flow from sensing patient behavior through noisy observations, to thinking using HMM belief tracking and BDI+MDP decision-making, to acting via robot actions that modify the environment and influence patient state transitions. The logging system captures all states and actions for analysis.
 
 ---
 
@@ -305,19 +382,18 @@ In a real implementation with a physical robot:
 
 We ran multiple simulations comparing the two modes. Sample results from 20-step simulations:
 
-**Proactive Mode:**
-- Average Engagement: 0.60
-- Total Strokes: 14 (Patient: 8, Robot: 6)
-- Max Idle Duration: 0 steps
-- Turn-Taking: 40% smooth alternation
-- Robot Confidence: 0.40
+| Metric | Proactive Mode | Reactive Mode | Better Performance |
+|--------|----------------|---------------|-------------------|
+| **Average Engagement** | 0.60 | 0.75 | Reactive (+25%) |
+| **Total Strokes** | 14 | 26 | Reactive (+86%) |
+| **Patient Strokes** | 8 | 10 | Reactive (+25%) |
+| **Robot Strokes** | 6 | 16 | Reactive (+167%) |
+| **Max Idle Duration** | 0 steps | 0 steps | Tied |
+| **Turn-Taking Quality** | 40% smooth | 55% smooth | Reactive (+15%) |
+| **Robot Confidence** | 0.40 | 0.46 | Reactive (+15%) |
+| **Canvas Coverage** | Partial | Partial | Similar |
 
-**Reactive Mode:**
-- Average Engagement: 0.75
-- Total Strokes: 26 (Patient: 10, Robot: 16)
-- Max Idle Duration: 0 steps
-- Turn-Taking: 55% smooth alternation
-- Robot Confidence: 0.46
+**Table 1: Comparison of Proactive vs Reactive Control Modes.** Metrics from 20-step simulation runs showing performance differences between robot behavior strategies. Engagement measured as proportion of time patient is actively involved; turn-taking quality indicates smooth alternation between agents; robot confidence reflects HMM belief certainty.
 
 **Interpretation:**
 In these runs, the reactive mode achieved **higher engagement** and **more collaborative output**. This suggests that respecting patient autonomy and responding to their initiative may be more effective than proactive suggestions.

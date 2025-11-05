@@ -6,7 +6,6 @@ based on canvas analysis, patient state, and robot behavior mode.
 import numpy as np
 import random
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 
 from utils import Color, Shape, PatientState, CANVAS_WIDTH, CANVAS_HEIGHT
 from stroke_analyzer import StrokeAnalyzer, CanvasAnalysis

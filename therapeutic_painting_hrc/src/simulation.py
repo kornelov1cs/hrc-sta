@@ -4,11 +4,11 @@ therapeutic collaborative painting.
 """
 
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime
 from pathlib import Path
 
-from environment import TherapyEnvironment, CanvasState
+from environment import TherapyEnvironment
 from patient_simulator import PatientSimulator
 from intent_recognition import PatientIntentHMM
 from robot_controller import RobotBDI
@@ -257,7 +257,7 @@ class TherapeuticPaintingSimulation:
         smooth_turns = sum(self.history['turn_taking'])
         avg_confidence = sum(self.history['robot_confidence']) / len(self.history['robot_confidence'])
 
-        print(f"Summary Statistics:")
+        print("Summary Statistics:")
         print(f"  Total Strokes: {total_strokes} (Patient: {patient_strokes}, Robot: {robot_strokes})")
         print(f"  Average Engagement: {avg_engagement:.2f}")
         print(f"  Idle Time: max={max_idle}, avg={avg_idle:.2f}")

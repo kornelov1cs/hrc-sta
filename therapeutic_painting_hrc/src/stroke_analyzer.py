@@ -4,11 +4,11 @@ Provides spatial, color, and compositional analysis for intelligent robot painti
 """
 
 import numpy as np
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple
 from collections import Counter
 from dataclasses import dataclass
 
-from utils import Color, Shape, CANVAS_WIDTH, CANVAS_HEIGHT
+from utils import Color, CANVAS_WIDTH, CANVAS_HEIGHT
 
 
 @dataclass
@@ -71,7 +71,7 @@ class StrokeAnalyzer:
 
         # Separate user and robot strokes
         user_strokes = [s for s in strokes if s.get('agent') == 'patient']
-        robot_strokes = [s for s in strokes if s.get('agent') == 'robot']
+        # robot_strokes not currently used in analysis but available for future features
 
         # Perform analyses
         spatial_analysis = self._analyze_spatial(strokes)

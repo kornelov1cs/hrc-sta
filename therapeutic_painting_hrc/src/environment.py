@@ -6,7 +6,7 @@ Manages the state of the collaborative painting session.
 from typing import List, Dict, Tuple, Optional
 import numpy as np
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 from utils import Color, Shape, CANVAS_WIDTH, CANVAS_HEIGHT

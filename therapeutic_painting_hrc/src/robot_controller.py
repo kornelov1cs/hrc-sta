@@ -4,7 +4,6 @@ and MDP-based decision-making for therapeutic painting collaboration.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
 import random
 from dataclasses import dataclass
 
@@ -331,7 +330,7 @@ class RobotBDI:
     def reset(self) -> None:
         """Reset robot controller for new session."""
         self.beliefs = {k: None if 'state' in k else 0.0
-                       for k in self.beliefs.keys()}
+                        for k in self.beliefs.keys()}
         self.desires = self._initialize_desires()
         self.intentions = []
         self.action_history = []
