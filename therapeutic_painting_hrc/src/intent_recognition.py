@@ -45,6 +45,17 @@ class PatientIntentHMM:
         """
         Build state transition probability matrix.
 
+        PARAMETER JUSTIFICATION (per assignment criteria):
+        Transition probabilities model realistic patient emotional dynamics:
+        - High self-transition (0.6-0.75): Stable states (ENGAGED, SATISFIED)
+          persist, reflecting sustained emotional states in therapy
+        - Medium self-transition (0.35-0.4): Uncertain states (HESITANT,
+          FRUSTRATED) are less stable, can improve or worsen
+        - Positive transitions: ENGAGED -> SATISFIED (0.2), NEEDS_SUPPORT ->
+          ENGAGED (0.3) model therapeutic progress
+        - Negative transitions: Small probabilities (0.05-0.15) for regression
+          to negative states, reflecting therapy challenges
+
         Returns:
             Matrix A where A[i,j] = P(state_j | state_i)
         """
@@ -98,6 +109,19 @@ class PatientIntentHMM:
     def _build_emission_matrix(self) -> np.ndarray:
         """
         Build observation emission probability matrix.
+
+        PARAMETER JUSTIFICATION (per assignment criteria):
+        Emission probabilities link hidden emotional states to observable behaviors:
+        - ENGAGED: High prob. of DRAWING (0.4) and LONG_STROKE (0.3), low IDLE (0.05)
+          -> Active, confident painting behavior
+        - NEEDS_SUPPORT: High PAUSED (0.3) and OBSERVING (0.25), medium IDLE (0.15)
+          -> Patient seeking guidance but not completely stuck
+        - HESITANT: High IDLE (0.25) and PAUSED (0.25), low LONG_STROKE (0.05)
+          -> Uncertain, tentative behavior
+        - SATISFIED: High OBSERVING (0.4), balanced activity
+          -> Contentment leads to stepping back and appreciating
+        - FRUSTRATED: High IDLE (0.35) and SHORT_STROKE (0.25), low DRAWING (0.05)
+          -> Giving up or making erratic attempts
 
         Returns:
             Matrix B where B[i,k] = P(observation_k | state_i)

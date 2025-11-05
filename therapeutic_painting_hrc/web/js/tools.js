@@ -9,7 +9,7 @@ class ToolManager {
     }
 
     setupToolListeners() {
-        // Tool buttons (pencil, marker, spray, eraser)
+        // Drawing tool (simplified - pencil only)
         const toolButtons = document.querySelectorAll('.tool-btn');
         toolButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -46,14 +46,6 @@ class ToolManager {
         });
 
         // Action buttons
-        document.getElementById('undo-btn').addEventListener('click', () => {
-            this.canvasManager.historyManager.undo();
-        });
-
-        document.getElementById('redo-btn').addEventListener('click', () => {
-            this.canvasManager.historyManager.redo();
-        });
-
         document.getElementById('clear-btn').addEventListener('click', () => {
             if (confirm('Are you sure you want to clear the canvas?')) {
                 this.canvasManager.clearCanvas();

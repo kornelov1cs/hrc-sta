@@ -13,17 +13,21 @@ class LayerManager {
     setupLayerListeners() {
         // Patient layer toggle
         const showPatientCheckbox = document.getElementById('show-patient');
-        showPatientCheckbox.addEventListener('change', (e) => {
-            this.showPatientLayer = e.target.checked;
-            this.updateLayerVisibility();
-        });
+        if (showPatientCheckbox) {
+            showPatientCheckbox.addEventListener('change', (e) => {
+                this.showPatientLayer = e.target.checked;
+                this.updateLayerVisibility();
+            });
+        }
 
         // Robot layer toggle
         const showRobotCheckbox = document.getElementById('show-robot');
-        showRobotCheckbox.addEventListener('change', (e) => {
-            this.showRobotLayer = e.target.checked;
-            this.updateLayerVisibility();
-        });
+        if (showRobotCheckbox) {
+            showRobotCheckbox.addEventListener('change', (e) => {
+                this.showRobotLayer = e.target.checked;
+                this.updateLayerVisibility();
+            });
+        }
     }
 
     updateLayerVisibility() {
@@ -44,24 +48,30 @@ class LayerManager {
     showAllLayers() {
         this.showPatientLayer = true;
         this.showRobotLayer = true;
-        document.getElementById('show-patient').checked = true;
-        document.getElementById('show-robot').checked = true;
+        const showPatientCheckbox = document.getElementById('show-patient');
+        const showRobotCheckbox = document.getElementById('show-robot');
+        if (showPatientCheckbox) showPatientCheckbox.checked = true;
+        if (showRobotCheckbox) showRobotCheckbox.checked = true;
         this.updateLayerVisibility();
     }
 
     showOnlyPatient() {
         this.showPatientLayer = true;
         this.showRobotLayer = false;
-        document.getElementById('show-patient').checked = true;
-        document.getElementById('show-robot').checked = false;
+        const showPatientCheckbox = document.getElementById('show-patient');
+        const showRobotCheckbox = document.getElementById('show-robot');
+        if (showPatientCheckbox) showPatientCheckbox.checked = true;
+        if (showRobotCheckbox) showRobotCheckbox.checked = false;
         this.updateLayerVisibility();
     }
 
     showOnlyRobot() {
         this.showPatientLayer = false;
         this.showRobotLayer = true;
-        document.getElementById('show-patient').checked = false;
-        document.getElementById('show-robot').checked = true;
+        const showPatientCheckbox = document.getElementById('show-patient');
+        const showRobotCheckbox = document.getElementById('show-robot');
+        if (showPatientCheckbox) showPatientCheckbox.checked = false;
+        if (showRobotCheckbox) showRobotCheckbox.checked = true;
         this.updateLayerVisibility();
     }
 }

@@ -9,6 +9,35 @@ class HistoryManager {
         this.currentIndex = -1;
         this.maxHistory = 50; // Maximum number of states to keep
         this.isRestoring = false; // Flag to prevent saving during restore
+        this.setupHistoryListeners();
+    }
+
+    setupHistoryListeners() {
+        // Check if undo/redo buttons exist before setting up listeners
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => this.undo());
+        }
+
+        if (redoBtn) {
+            redoBtn.addEventListener('click', () => this.redo());
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Z for undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            }
+            // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
+            else if ((e.ctrlKey || e.metaKey) && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
+                e.preventDefault();
+                this.redo();
+            }
+        });
     }
 
     saveState() {
@@ -100,8 +129,8 @@ class HistoryManager {
         const undoBtn = document.getElementById('undo-btn');
         const redoBtn = document.getElementById('redo-btn');
 
-        undoBtn.disabled = this.currentIndex <= 0;
-        redoBtn.disabled = this.currentIndex >= this.history.length - 1;
+        if (undoBtn) undoBtn.disabled = this.currentIndex <= 0;
+        if (redoBtn) redoBtn.disabled = this.currentIndex >= this.history.length - 1;
     }
 
     clear() {

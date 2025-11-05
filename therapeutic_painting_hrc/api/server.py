@@ -20,7 +20,7 @@ import time
 from typing import List, Dict
 import asyncio
 
-from api.models import (
+from .models import (
     StrokeRequest,
     StrokeResponse,
     RobotActionResponse,

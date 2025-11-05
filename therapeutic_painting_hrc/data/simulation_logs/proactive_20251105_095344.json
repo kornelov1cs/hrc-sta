@@ -1,0 +1,321 @@
+{
+  "run_id": "proactive_20251105_095344",
+  "mode": "proactive",
+  "timestamp": "2025-11-05T09:53:44.686128",
+  "num_steps": 10,
+  "add_noise": true,
+  "history": {
+    "timesteps": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "patient_true_states": [
+      "Hesitant",
+      "Hesitant",
+      "Frustrated",
+      "Frustrated",
+      "Frustrated",
+      "Hesitant",
+      "Engaged",
+      "Engaged",
+      "Engaged",
+      "NeedsSupport"
+    ],
+    "patient_observations": [
+      "LongStroke",
+      "Paused",
+      "ShortStroke",
+      "ShortStroke",
+      "Paused",
+      "LongStroke",
+      "Idle",
+      "Observing",
+      "LongStroke",
+      "ShortStroke"
+    ],
+    "patient_actions": [
+      "paint",
+      "idle",
+      "paint",
+      "paint",
+      "idle",
+      "paint",
+      "idle",
+      "idle",
+      "paint",
+      "paint"
+    ],
+    "robot_beliefs": [
+      {
+        "Engaged": 0.5693430656934306,
+        "NeedsSupport": 0.07299270072992702,
+        "Hesitant": 0.06204379562043796,
+        "Satisfied": 0.2408759124087591,
+        "Frustrated": 0.054744525547445265
+      },
+      {
+        "Engaged": 0.16143562917756468,
+        "NeedsSupport": 0.2977332170880557,
+        "Hesitant": 0.17291485033420517,
+        "Satisfied": 0.24208079046788725,
+        "Frustrated": 0.12583551293228715
+      },
+      {
+        "Engaged": 0.18723080620159135,
+        "NeedsSupport": 0.23524534101622227,
+        "Hesitant": 0.1709953337540965,
+        "Satisfied": 0.1771377717685521,
+        "Frustrated": 0.22939074725953779
+      },
+      {
+        "Engaged": 0.18035216224826722,
+        "NeedsSupport": 0.220719204903818,
+        "Hesitant": 0.1791542557415142,
+        "Satisfied": 0.14139195414983166,
+        "Frustrated": 0.2783824229565689
+      },
+      {
+        "Engaged": 0.07205799111892057,
+        "NeedsSupport": 0.36656587219117864,
+        "Hesitant": 0.2592448340391954,
+        "Satisfied": 0.1005740549212084,
+        "Frustrated": 0.20155724772949696
+      },
+      {
+        "Engaged": 0.5788200543789704,
+        "NeedsSupport": 0.10824522352530498,
+        "Hesitant": 0.08395330497832104,
+        "Satisfied": 0.16140683162821776,
+        "Frustrated": 0.06757458548918578
+      },
+      {
+        "Engaged": 0.1704982028974368,
+        "NeedsSupport": 0.17529731900202564,
+        "Hesitant": 0.2022735608654812,
+        "Satisfied": 0.2030818085228118,
+        "Frustrated": 0.2488491087122446
+      },
+      {
+        "Engaged": 0.11305137229974817,
+        "NeedsSupport": 0.23225068484337064,
+        "Hesitant": 0.1673019687742206,
+        "Satisfied": 0.40933430399860066,
+        "Frustrated": 0.0780616700840599
+      },
+      {
+        "Engaged": 0.4698733770002058,
+        "NeedsSupport": 0.06491145031328925,
+        "Hesitant": 0.049555274386167934,
+        "Satisfied": 0.3779968058770105,
+        "Frustrated": 0.03766309242332654
+      },
+      {
+        "Engaged": 0.29347354085112504,
+        "NeedsSupport": 0.13943685988855017,
+        "Hesitant": 0.09841556447046439,
+        "Satisfied": 0.3202567156633954,
+        "Frustrated": 0.14841731912646502
+      }
+    ],
+    "robot_most_likely_state": [
+      "Engaged",
+      "NeedsSupport",
+      "NeedsSupport",
+      "Frustrated",
+      "NeedsSupport",
+      "Engaged",
+      "Frustrated",
+      "Satisfied",
+      "Engaged",
+      "Satisfied"
+    ],
+    "robot_confidence": [
+      0.5693430656934306,
+      0.2977332170880557,
+      0.23524534101622227,
+      0.2783824229565689,
+      0.36656587219117864,
+      0.5788200543789704,
+      0.2488491087122446,
+      0.40933430399860066,
+      0.4698733770002058,
+      0.3202567156633954
+    ],
+    "robot_actions": [
+      "ContinuePatient",
+      "InitiatePaint",
+      "InitiatePaint",
+      "SuggestColor",
+      "InitiatePaint",
+      "Wait",
+      "SuggestColor",
+      "Observe",
+      "Wait",
+      "Observe"
+    ],
+    "canvas_states": [
+      {
+        "coverage": 0.004341666666666666,
+        "total_strokes": 2,
+        "patient_strokes": 1,
+        "robot_strokes": 1,
+        "colors_used": 2,
+        "recent_patient_activity": 1,
+        "recent_robot_activity": 1
+      },
+      {
+        "coverage": 0.007675,
+        "total_strokes": 3,
+        "patient_strokes": 1,
+        "robot_strokes": 2,
+        "colors_used": 3,
+        "recent_patient_activity": 1,
+        "recent_robot_activity": 2
+      },
+      {
+        "coverage": 0.012727083333333333,
+        "total_strokes": 5,
+        "patient_strokes": 2,
+        "robot_strokes": 3,
+        "colors_used": 4,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 3
+      },
+      {
+        "coverage": 0.013560416666666667,
+        "total_strokes": 6,
+        "patient_strokes": 3,
+        "robot_strokes": 3,
+        "colors_used": 4,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 2
+      },
+      {
+        "coverage": 0.0146625,
+        "total_strokes": 7,
+        "patient_strokes": 3,
+        "robot_strokes": 4,
+        "colors_used": 4,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 2
+      },
+      {
+        "coverage": 0.017995833333333332,
+        "total_strokes": 8,
+        "patient_strokes": 4,
+        "robot_strokes": 4,
+        "colors_used": 5,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 1
+      },
+      {
+        "coverage": 0.017995833333333332,
+        "total_strokes": 8,
+        "patient_strokes": 4,
+        "robot_strokes": 4,
+        "colors_used": 5,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 1
+      },
+      {
+        "coverage": 0.017995833333333332,
+        "total_strokes": 8,
+        "patient_strokes": 4,
+        "robot_strokes": 4,
+        "colors_used": 5,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 1
+      },
+      {
+        "coverage": 0.021329166666666666,
+        "total_strokes": 9,
+        "patient_strokes": 5,
+        "robot_strokes": 4,
+        "colors_used": 5,
+        "recent_patient_activity": 1,
+        "recent_robot_activity": 0
+      },
+      {
+        "coverage": 0.0221625,
+        "total_strokes": 10,
+        "patient_strokes": 6,
+        "robot_strokes": 4,
+        "colors_used": 5,
+        "recent_patient_activity": 2,
+        "recent_robot_activity": 0
+      }
+    ],
+    "engagement_scores": [
+      0.4,
+      0.4,
+      0.2,
+      0.2,
+      0.2,
+      0.4,
+      1.0,
+      1.0,
+      1.0,
+      0.6
+    ],
+    "idle_durations": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "turn_taking": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ],
+    "belief_entropy": [
+      1.7112381160108157,
+      2.254640497194104,
+      2.308961603714634,
+      2.28382495878226,
+      2.1080966258211067,
+      1.791248358043674,
+      2.3082912728445772,
+      2.0909646005930016,
+      1.6916259146025132,
+      2.1791564849895635
+    ]
+  },
+  "summary": {
+    "total_strokes": 10,
+    "patient_strokes": 6,
+    "robot_strokes": 4,
+    "avg_engagement": 0.5399999999999999,
+    "min_engagement": 0.2,
+    "max_engagement": 1.0,
+    "max_idle_duration": 0,
+    "avg_idle_duration": 0.0,
+    "total_idle_steps": 0,
+    "smooth_turn_taking_count": 7,
+    "turn_taking_percentage": 70.0,
+    "avg_robot_confidence": 0.3774403478698873,
+    "final_coverage": 0.0221625,
+    "avg_belief_entropy": 2.072804843259625
+  }
+}

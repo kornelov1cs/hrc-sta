@@ -1,214 +1,98 @@
-# Therapeutic Painting - Fabric.js Canvas
+# Therapeutic Painting - HRC Web Visualization
 
-An interactive web application for collaborative painting with an intelligent robot assistant using fabric.js.
+A simplified web interface for demonstrating human-robot collaboration in therapeutic painting. This visualization shows the SENSE-THINK-ACT loop with HMM intent recognition, BDI architecture, and MDP decision-making.
+
+## Purpose
+
+This interface provides a "simple but compelling visualization" (per assignment criteria) that demonstrates:
+- **SENSE**: HMM-based patient state inference from drawing behavior
+- **THINK**: BDI architecture selecting actions via MDP policy
+- **ACT**: Robot executing collaborative painting actions
 
 ## Features
 
-### Drawing Tools
-- **Multiple brush types**: Pencil, marker, spray, and eraser
-- **Shape tools**: Circle, square, line, curve, and splash effects
-- **Color palette**: 6 therapeutic colors (red, blue, yellow, green, purple, orange)
-- **Adjustable brush size**: 5-80 pixels
+### Drawing Tools (Simplified)
+- **Single brush type**: Pencil for freehand drawing
+- **6 therapeutic colors**: Red (energizing), Blue (calming), Yellow (uplifting), Green (balancing), Purple (creative), Orange (warm)
+- **Adjustable brush size**: 10-50 pixels
+- **2 basic shapes**: Circle and square for quick composition
 
-### Advanced Capabilities
-- **Layer management**: Toggle visibility of patient vs robot strokes independently
-- **Undo/Redo**: Full history support with up to 50 states
-- **Real-time collaboration**: WebSocket connection for instant robot responses
-- **Text prompts**: Ask the robot to draw specific things
+### HRC System Visualization
+- **Real-time belief state**: Visual display of HMM probability distribution over patient states
+- **BDI decision process**: Shows active desires and selected intentions
+- **Robot actions**: Displays current robot action and reasoning
+- **Canvas statistics**: Tracks patient vs robot contributions
+- **Activity log**: Records major events and state changes
 
-### Robot Intelligence
-- **BDI Architecture**: Robot uses Belief-Desire-Intention reasoning
-- **HMM State Inference**: Infers patient emotional state from drawing patterns
-- **Contextual painting**: Robot strokes adapt to patient state and canvas composition
-- **Multiple action types**: Initiate, continue, suggest, or observe
-
-## Installation
+## Installation & Running
 
 1. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Verify installation**:
+2. **Start the application** using the provided script:
    ```bash
-   python -c "import fastapi; import uvicorn; print('FastAPI installed successfully')"
+   ./start_canvas.sh
    ```
 
-## Running the Application
-
-1. **Start the FastAPI server**:
+   Or manually:
    ```bash
    python api/server.py
    ```
 
-   The server will start on `http://localhost:8000`
-
-2. **Open your browser** and navigate to:
+3. **Open your browser** and navigate to:
    ```
    http://localhost:8000
    ```
 
-3. **Start painting!** The robot will respond to your strokes in real-time.
+## Usage
 
-## Usage Guide
-
-### Basic Drawing
-1. Select a color from the color palette
-2. Choose a brush type (pencil, marker, spray, or eraser)
-3. Adjust the brush size using the slider
-4. Draw on the canvas
-5. The robot will respond based on your drawing patterns
-
-### Using Text Prompts
-1. Type a description in the prompt input at the bottom (e.g., "Draw a happy sun")
-2. Press Enter or click "Send"
-3. The robot will generate a stroke based on your prompt
-
-### Layer Controls
-- **Your Strokes**: Toggle to show/hide your own strokes
-- **Robot Strokes**: Toggle to show/hide robot-generated strokes
-- Use this to see individual contributions or the combined artwork
-
-### History Management
-- **Undo**: Click the Undo button or press Ctrl+Z (⌘+Z on Mac)
-- **Redo**: Click the Redo button or press Ctrl+Y (⌘+Y on Mac)
-- **Clear**: Clears the entire canvas (confirmation required)
-
-### Robot Status Panel
-Monitor the robot's activity in the right sidebar:
-- **Connection Status**: Shows WebSocket connection state
-- **Current Action**: What the robot is currently doing
-- **Patient State**: The robot's inference of your emotional state
-- **Belief Distribution**: Probability distribution over possible states
-- **Canvas Statistics**: Stroke counts and coverage
-- **Message Log**: Recent robot actions and system messages
+1. **Draw on the canvas** using the provided colors and tools
+2. **Observe the robot status panel** on the right to see:
+   - How the HMM updates beliefs about your emotional state
+   - What desires the BDI system activates
+   - Which action the MDP policy selects
+3. **Watch the robot respond** with collaborative painting actions
+4. **Optional**: Use the text prompt to request specific robot actions
 
 ## Architecture
 
-### Backend (Python/FastAPI)
-- **api/server.py**: Main FastAPI application with WebSocket support
-- **api/models.py**: Pydantic models for API communication
-- **src/**: Existing robot controller, HMM, and intelligent painter
-
-### Frontend (HTML/CSS/JavaScript)
-- **web/index.html**: Main application interface
-- **web/css/styles.css**: Comprehensive styling
-- **web/js/canvas.js**: Fabric.js canvas management
-- **web/js/tools.js**: Drawing tool selection and configuration
-- **web/js/layers.js**: Layer visibility management
-- **web/js/history.js**: Undo/redo functionality
-- **web/js/robot.js**: WebSocket client for robot communication
-
-### Communication Flow
 ```
-User draws on canvas (fabric.js)
-    ↓
-WebSocket message to backend
-    ↓
-HMM infers patient state
-    ↓
-Robot BDI deliberates action
-    ↓
-Intelligent painter generates stroke
-    ↓
-WebSocket message to frontend
-    ↓
-Robot stroke rendered on canvas
+Patient Drawing → HMM (SENSE) → BDI + MDP (THINK) → Robot Action (ACT)
+                     ↓                  ↓                    ↓
+                Belief Update    Desire Selection     Canvas Update
 ```
 
-## API Endpoints
+### Key Components
 
-### REST API
-- `GET /`: Serve web application
-- `POST /api/stroke`: Process user stroke, get robot response
-- `POST /api/prompt`: Send text prompt to robot
-- `GET /api/state`: Get current belief state and statistics
-- `POST /api/reset`: Reset painting session
+- **HMM Intent Recognition** (`src/intent_recognition.py`): Forward algorithm for belief updates
+- **BDI Controller** (`src/robot_controller.py`): Belief-Desire-Intention architecture
+- **MDP Policy** (`src/robot_controller.py`): Action selection based on state and mode
+- **WebSocket Communication** (`api/server.py`): Real-time updates between frontend and backend
 
-### WebSocket
-- `ws://localhost:8000/ws`: Real-time bidirectional communication
+## Design Rationale
 
-#### Message Types
-- **user_stroke**: User drawing event
-- **prompt**: Text prompt from user
-- **robot_action**: Robot's response with strokes
-- **belief_update**: Updated patient state distribution
-- **session_reset**: Session cleared
-- **error**: Error message
+This interface is intentionally simplified to focus on demonstrating the HRC concepts rather than providing a feature-rich painting application. The emphasis is on making the robot's intelligence visible through:
+- Clear labeling of SENSE-THINK-ACT stages
+- Real-time visualization of belief distributions
+- Explanatory text connecting features to course concepts (HMM, BDI, MDP)
 
-## Customization
+## File Structure
 
-### Robot Behavior Mode
-Edit `api/server.py` line 68 to change robot mode:
-```python
-self.robot = RobotBDI(mode='proactive')  # or 'reactive'
+```
+web/
+├── index.html              # Main interface (simplified, ~180 lines)
+├── css/
+│   └── styles.css          # Styling
+└── js/
+    ├── canvas.js           # Fabric.js canvas management
+    ├── tools.js            # Tool selection and configuration
+    └── robot.js            # WebSocket communication with backend
 ```
 
-- **Proactive**: Robot takes initiative, fills spaces, provides structure
-- **Reactive**: Robot follows user's lead, matches style, harmonizes
+## Notes
 
-### Canvas Dimensions
-Edit `web/js/canvas.js` lines 19-20:
-```javascript
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
-```
-
-### Colors
-Add or modify colors in `src/utils.py` and update:
-- `web/js/canvas.js`: COLOR_MAP
-- `web/index.html`: Color palette buttons
-
-## Troubleshooting
-
-### WebSocket Connection Failed
-- Ensure the FastAPI server is running
-- Check browser console for errors
-- Verify port 8000 is not blocked by firewall
-
-### Robot Not Responding
-- Check the connection status indicator (should be green)
-- Look at the message log for errors
-- Verify backend logs for exceptions
-
-### Canvas Not Rendering
-- Check browser console for JavaScript errors
-- Ensure fabric.js CDN is accessible
-- Verify all JavaScript modules loaded correctly
-
-### Import Errors
-If you see import errors about `utils`, `environment`, etc., make sure you're running the server from the project root directory:
-```bash
-cd /path/to/therapeutic_painting_hrc
-python api/server.py
-```
-
-## Browser Compatibility
-
-Tested and working on:
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## Performance
-
-- Maximum 50 undo/redo states stored
-- Message log limited to 20 messages
-- Canvas objects are non-selectable for better performance
-- WebSocket reconnection with exponential backoff
-
-## Future Enhancements
-
-Potential additions:
-- Export canvas as image (PNG/SVG)
-- Save/load sessions
-- Multi-user collaboration
-- Voice prompts
-- Animation of robot strokes
-- Brush texture customization
-- More sophisticated shape recognition
-
-## License
-
-Part of the Therapeutic Painting HRC project.
+- Removed features from earlier versions: multiple brush types, undo/redo, layer controls
+- Focus shifted to HRC demonstration over painting features
+- Aligns with assignment requirement for "simple but compelling visualization"

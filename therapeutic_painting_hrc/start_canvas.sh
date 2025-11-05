@@ -42,5 +42,5 @@ echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-# Run the server
-python api/server.py
+# Run the server as a module (required for relative imports)
+python -m api.server

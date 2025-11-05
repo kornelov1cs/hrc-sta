@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Therapeutic Painting - Human-Robot Collaboration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Therapeutic Painting - HRC Simulation</title>
 
     <!-- Fabric.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
@@ -18,51 +16,37 @@
         <!-- Header -->
         <header>
             <h1>Therapeutic Painting Studio</h1>
-            <p class="subtitle">Collaborative painting with an intelligent robot assistant</p>
+            <p class="subtitle">Human-Robot Collaboration | Intent Recognition with HMM | Decision-Making with BDI+MDP</p>
         </header>
 
         <div class="main-content">
-            <!-- Left Sidebar - Drawing Tools -->
+            <!-- Left Sidebar - Simple Drawing Tools -->
             <aside class="sidebar left-sidebar">
                 <div class="tool-section">
                     <h3>Drawing Tools</h3>
 
-                    <!-- Brush Tools -->
+                    <!-- Therapeutic Colors -->
                     <div class="tool-group">
-                        <label>Brush Type</label>
-                        <div class="button-group">
-                            <button class="tool-btn active" data-tool="pencil" title="Pencil">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                                </svg>
-                            </button>
-                            <button class="tool-btn" data-tool="marker" title="Marker">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M18.5 1.15L17 2.65l3.35 3.35 1.5-1.5c.3-.3.3-.77 0-1.06L19.56 1.15c-.3-.3-.77-.3-1.06 0zM15 4.65L3 16.65V20h3.35L18.35 8l-3.35-3.35z"/>
-                                </svg>
-                            </button>
-                            <button class="tool-btn" data-tool="spray" title="Spray">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <circle cx="4" cy="4" r="1.5"/>
-                                    <circle cx="8" cy="2" r="1"/>
-                                    <circle cx="12" cy="3" r="1.5"/>
-                                    <circle cx="6" cy="8" r="1"/>
-                                    <circle cx="10" cy="7" r="1.5"/>
-                                    <circle cx="3" cy="12" r="1.5"/>
-                                    <path d="M14 10l-3 3 4 4 3-3-4-4z"/>
-                                </svg>
-                            </button>
-                            <button class="tool-btn" data-tool="eraser" title="Eraser">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M16.24 3.56l4.95 4.95c.39.39.39 1.02 0 1.41L12.07 19l-5.66-5.66 9.83-9.78zm-4.95 11.31L5.66 9.24 2.81 12.1c-.39.39-.39 1.02 0 1.41l4.95 4.95 3.53-3.59z"/>
-                                </svg>
-                            </button>
+                        <label>Therapeutic Colors</label>
+                        <div class="color-palette">
+                            <button class="color-btn active" data-color="RED" style="background-color: #FF6B6B" title="Red - Energizing"></button>
+                            <button class="color-btn" data-color="BLUE" style="background-color: #4ECDC4" title="Blue - Calming"></button>
+                            <button class="color-btn" data-color="YELLOW" style="background-color: #FFE66D" title="Yellow - Uplifting"></button>
+                            <button class="color-btn" data-color="GREEN" style="background-color: #95E1D3" title="Green - Balancing"></button>
+                            <button class="color-btn" data-color="PURPLE" style="background-color: #AA96DA" title="Purple - Creative"></button>
+                            <button class="color-btn" data-color="ORANGE" style="background-color: #FCBF49" title="Orange - Warm"></button>
                         </div>
                     </div>
 
-                    <!-- Shape Tools -->
+                    <!-- Brush Size -->
                     <div class="tool-group">
-                        <label>Shapes</label>
+                        <label>Brush Size: <span id="size-value">20</span>px</label>
+                        <input type="range" id="brush-size" min="10" max="50" value="20" step="5">
+                    </div>
+
+                    <!-- Basic Shapes -->
+                    <div class="tool-group">
+                        <label>Quick Shapes</label>
                         <div class="button-group">
                             <button class="shape-btn" data-shape="CIRCLE" title="Circle">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,82 +58,22 @@
                                     <rect x="4" y="4" width="16" height="16"/>
                                 </svg>
                             </button>
-                            <button class="shape-btn" data-shape="LINE" title="Line">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="4" y1="20" x2="20" y2="4"/>
-                                </svg>
-                            </button>
-                            <button class="shape-btn" data-shape="CURVE" title="Curve">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 20 Q 12 4 21 20"/>
-                                </svg>
-                            </button>
-                            <button class="shape-btn" data-shape="SPLASH" title="Splash">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <circle cx="12" cy="12" r="2"/>
-                                    <circle cx="8" cy="10" r="1"/>
-                                    <circle cx="16" cy="14" r="1.5"/>
-                                    <circle cx="10" cy="16" r="1"/>
-                                    <circle cx="14" cy="8" r="1"/>
-                                </svg>
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Color Picker -->
+                    <!-- Clear Button -->
                     <div class="tool-group">
-                        <label>Colors</label>
-                        <div class="color-palette">
-                            <button class="color-btn active" data-color="RED" style="background-color: #FF6B6B" title="Red"></button>
-                            <button class="color-btn" data-color="BLUE" style="background-color: #4ECDC4" title="Blue"></button>
-                            <button class="color-btn" data-color="YELLOW" style="background-color: #FFE66D" title="Yellow"></button>
-                            <button class="color-btn" data-color="GREEN" style="background-color: #95E1D3" title="Green"></button>
-                            <button class="color-btn" data-color="PURPLE" style="background-color: #AA96DA" title="Purple"></button>
-                            <button class="color-btn" data-color="ORANGE" style="background-color: #FCBF49" title="Orange"></button>
-                        </div>
-                    </div>
-
-                    <!-- Stroke Size -->
-                    <div class="tool-group">
-                        <label>Brush Size: <span id="size-value">20</span>px</label>
-                        <input type="range" id="brush-size" min="5" max="80" value="20" step="5">
-                    </div>
-
-                    <!-- Layer Controls -->
-                    <div class="tool-group">
-                        <label>Layers</label>
-                        <div class="layer-controls">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="show-patient" checked>
-                                <span>Your Strokes</span>
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="show-robot" checked>
-                                <span>Robot Strokes</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="tool-group">
-                        <button class="action-btn" id="undo-btn" title="Undo">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
-                            </svg>
-                            Undo
-                        </button>
-                        <button class="action-btn" id="redo-btn" title="Redo">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>
-                            </svg>
-                            Redo
-                        </button>
                         <button class="action-btn danger" id="clear-btn" title="Clear Canvas">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                            </svg>
-                            Clear
+                            Clear Canvas
                         </button>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="tool-group">
+                        <label>How to Use</label>
+                        <p style="font-size: 0.85em; line-height: 1.4; color: #666;">
+                            Draw on the canvas to express yourself. The robot observes your activity and emotional state (via HMM), then decides how to assist using BDI architecture and MDP policy.
+                        </p>
                     </div>
                 </div>
             </aside>
@@ -160,17 +84,17 @@
                     <canvas id="painting-canvas"></canvas>
                 </div>
 
-                <!-- Prompt Input -->
+                <!-- Prompt Input (for robot interaction) -->
                 <div class="prompt-section">
-                    <input type="text" id="prompt-input" placeholder="Ask the robot to draw something... (e.g., 'Draw a happy sun')">
+                    <input type="text" id="prompt-input" placeholder="Optional: Ask the robot to draw something (e.g., 'Draw a sun')">
                     <button id="send-prompt-btn">Send</button>
                 </div>
             </main>
 
-            <!-- Right Sidebar - Robot Status -->
+            <!-- Right Sidebar - HRC System Status -->
             <aside class="sidebar right-sidebar">
                 <div class="info-section">
-                    <h3>Robot Status</h3>
+                    <h3>HRC System Status</h3>
 
                     <!-- Connection Status -->
                     <div class="status-indicator">
@@ -178,30 +102,40 @@
                         <span id="connection-text">Connecting...</span>
                     </div>
 
-                    <!-- Current Action -->
+                    <!-- SENSE: Patient Observation -->
                     <div class="info-group">
-                        <label>Current Action</label>
+                        <label>SENSE: Patient State (HMM Belief)</label>
+                        <div class="info-value" id="patient-state">Initializing...</div>
+                        <div class="belief-bars" id="belief-distribution"></div>
+                        <small style="color: #666; font-size: 0.8em;">
+                            Hidden Markov Model updates belief distribution based on observed behavior
+                        </small>
+                    </div>
+
+                    <!-- THINK: Robot Decision -->
+                    <div class="info-group">
+                        <label>THINK: BDI Decision Layer</label>
+                        <div class="info-value" id="robot-desires" style="font-size: 0.85em; margin-bottom: 0.5em;">
+                            Active Desires: -
+                        </div>
+                        <small style="color: #666; font-size: 0.8em;">
+                            Beliefs → Desires → Intentions (MDP policy)
+                        </small>
+                    </div>
+
+                    <!-- ACT: Robot Action -->
+                    <div class="info-group">
+                        <label>ACT: Current Robot Action</label>
                         <div class="info-value" id="robot-action">Waiting</div>
                     </div>
 
-                    <!-- Belief State -->
-                    <div class="info-group">
-                        <label>Patient State</label>
-                        <div class="info-value" id="patient-state">Unknown</div>
-                        <div class="belief-bars" id="belief-distribution"></div>
-                    </div>
-
-                    <!-- Canvas Stats -->
+                    <!-- Canvas Statistics -->
                     <div class="info-group">
                         <label>Canvas Statistics</label>
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <span class="stat-label">Coverage:</span>
                                 <span class="stat-value" id="canvas-coverage">0%</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total Strokes:</span>
-                                <span class="stat-value" id="total-strokes">0</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Your Strokes:</span>
@@ -211,24 +145,33 @@
                                 <span class="stat-label">Robot Strokes:</span>
                                 <span class="stat-value" id="robot-strokes">0</span>
                             </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Strokes:</span>
+                                <span class="stat-value" id="total-strokes">0</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Robot Messages -->
+                    <!-- Robot Messages / Activity Log -->
                     <div class="info-group">
-                        <label>Messages</label>
-                        <div class="message-log" id="message-log"></div>
+                        <label>Activity Log</label>
+                        <div class="message-log" id="message-log">
+                            <small style="color: #999;">Waiting for activity...</small>
+                        </div>
                     </div>
                 </div>
             </aside>
         </div>
+
+        <!-- Footer Note -->
+        <footer style="text-align: center; padding: 1em; color: #999; font-size: 0.85em;">
+            Therapeutic Painting HRC System | HMM Intent Recognition + BDI Architecture + MDP Decision Making
+        </footer>
     </div>
 
-    <!-- JavaScript Modules -->
+    <!-- JavaScript Modules (simplified) -->
     <script type="module" src="/static/js/canvas.js"></script>
     <script type="module" src="/static/js/tools.js"></script>
-    <script type="module" src="/static/js/layers.js"></script>
-    <script type="module" src="/static/js/history.js"></script>
     <script type="module" src="/static/js/robot.js"></script>
 </body>
 </html>

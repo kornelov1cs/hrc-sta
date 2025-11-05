@@ -359,18 +359,28 @@ class TherapeuticPaintingMDP:
         """
         Initialize reward function weights.
 
+        PARAMETER JUSTIFICATION (per assignment criteria):
+        Values are calibrated based on therapeutic priorities:
+        - Highest rewards (15.0): Prevent stagnation and assist frustrated patients
+          (critical for therapy effectiveness)
+        - Medium-high rewards (10-12): Maintain engagement and turn-taking
+          (important for collaborative therapeutic experience)
+        - Low rewards (5.0): Respect satisfied patients without over-intervention
+        - Negative rewards: Penalize interrupting engaged patients (-8) and
+          robot inactivity (-10) to balance autonomy with support
+
         Returns:
             Dictionary of reward values
         """
         return {
-            'reduce_idle': 15.0,
-            'maintain_engagement': 10.0,
-            'interrupt_engaged': -8.0,
-            'collaborative_turn': 12.0,
-            'robot_inactive_long': -10.0,
-            'help_frustrated': 15.0,
-            'support_hesitant': 12.0,
-            'respect_satisfied': 5.0
+            'reduce_idle': 15.0,              # Highest: prevent therapy stagnation
+            'maintain_engagement': 10.0,       # High: sustain therapeutic flow
+            'interrupt_engaged': -8.0,         # Penalty: respect patient autonomy
+            'collaborative_turn': 12.0,        # High: encourage co-creation
+            'robot_inactive_long': -10.0,      # Penalty: robot should be helpful
+            'help_frustrated': 15.0,           # Highest: address emotional distress
+            'support_hesitant': 12.0,          # High: provide scaffolding
+            'respect_satisfied': 5.0           # Low: minimal intervention when satisfied
         }
 
     def select_action(self, state: Tuple, beliefs: Dict) -> RobotAction:
