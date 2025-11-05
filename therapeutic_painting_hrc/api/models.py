@@ -34,6 +34,7 @@ class StrokeRequest(BaseModel):
     shape: ShapeEnum
     size: int = Field(ge=1, le=100)
     timestamp: Optional[int] = None
+    points: Optional[List[Tuple[int, int]]] = None  # For continuous paths
 
     class Config:
         json_schema_extra = {
@@ -42,7 +43,8 @@ class StrokeRequest(BaseModel):
                 "position": [400, 300],
                 "color": "BLUE",
                 "shape": "CIRCLE",
-                "size": 20
+                "size": 20,
+                "points": None
             }
         }
 
@@ -55,6 +57,7 @@ class StrokeResponse(BaseModel):
     shape: str
     size: int
     timestamp: int
+    points: Optional[List[Tuple[int, int]]] = None  # For continuous paths
 
     class Config:
         json_schema_extra = {
@@ -64,7 +67,8 @@ class StrokeResponse(BaseModel):
                 "color": "PURPLE",
                 "shape": "CURVE",
                 "size": 25,
-                "timestamp": 1234567890
+                "timestamp": 1234567890,
+                "points": None
             }
         }
 
@@ -86,7 +90,8 @@ class RobotActionResponse(BaseModel):
                         "color": "PURPLE",
                         "shape": "CURVE",
                         "size": 25,
-                        "timestamp": 1234567890
+                        "timestamp": 1234567890,
+                        "points": [[420, 310], [425, 315], [430, 318]]
                     }
                 ],
                 "message": "Robot is initiating painting to increase engagement"
@@ -143,7 +148,8 @@ class WebSocketMessage(BaseModel):
                     "color": "PURPLE",
                     "shape": "CURVE",
                     "size": 25,
-                    "timestamp": 1234567890
+                    "timestamp": 1234567890,
+                    "points": None
                 }
             }
         }

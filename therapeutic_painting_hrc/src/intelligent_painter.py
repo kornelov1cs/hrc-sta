@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from utils import Color, Shape, PatientState, CANVAS_WIDTH, CANVAS_HEIGHT
 from stroke_analyzer import StrokeAnalyzer, CanvasAnalysis
+from path_generator import PathGenerator
 
 
 class IntelligentPainter:
@@ -27,7 +28,8 @@ class IntelligentPainter:
         self,
         canvas_width: int = CANVAS_WIDTH,
         canvas_height: int = CANVAS_HEIGHT,
-        mode: str = 'proactive'
+        mode: str = 'proactive',
+        use_continuous_strokes: bool = True
     ):
         """
         Initialize intelligent painter.
@@ -36,11 +38,14 @@ class IntelligentPainter:
             canvas_width: Canvas width in pixels
             canvas_height: Canvas height in pixels
             mode: Robot behavior mode ('proactive' or 'reactive')
+            use_continuous_strokes: Whether to generate continuous path strokes
         """
         self.width = canvas_width
         self.height = canvas_height
         self.mode = mode
+        self.use_continuous_strokes = use_continuous_strokes
         self.analyzer = StrokeAnalyzer(canvas_width, canvas_height)
+        self.path_generator = PathGenerator(canvas_width, canvas_height)
 
     def generate_stroke(
         self,
@@ -127,12 +132,21 @@ class IntelligentPainter:
             shape = Shape.SPLASH  # Decorative
             position = self._get_empty_position(analysis)
 
-        return {
+        stroke_data = {
             'position': position,
             'color': color,
             'shape': shape,
             'size': int(size)
         }
+
+        # Add continuous path if enabled
+        if self.use_continuous_strokes:
+            path_style = self._get_path_style_for_state(patient_state)
+            stroke_data['points'] = self.path_generator.generate_contextual_path(
+                position, size, path_style
+            )
+
+        return stroke_data
 
     def _generate_reactive_stroke(
         self,
@@ -172,12 +186,22 @@ class IntelligentPainter:
             shape = self._match_user_style(analysis)
             position = self._get_complementary_position(analysis)
 
-        return {
+        stroke_data = {
             'position': position,
             'color': color,
             'shape': shape,
             'size': int(size)
         }
+
+        # Add continuous path if enabled
+        if self.use_continuous_strokes:
+            # Reactive mode uses more flowing, subtle strokes
+            path_style = 'flowing' if analysis.user_activity_level == 'high' else 'smooth'
+            stroke_data['points'] = self.path_generator.generate_contextual_path(
+                position, size, path_style
+            )
+
+        return stroke_data
 
     # ==================== Color Selection Methods ====================
 
@@ -462,3 +486,37 @@ class IntelligentPainter:
                 np.random.randint(50, self.width - 50),
                 np.random.randint(50, self.height - 50)
             )
+
+    def _get_path_style_for_state(self, patient_state: Optional[PatientState]) -> str:
+        """
+        Determine appropriate path style based on patient emotional state.
+
+        Args:
+            patient_state: Current patient emotional state
+
+        Returns:
+            Path style string for PathGenerator
+        """
+        if patient_state == PatientState.FRUSTRATED:
+            # Calm, soothing strokes
+            return 'calming'
+
+        elif patient_state == PatientState.HESITANT:
+            # Structured, guiding strokes
+            return 'structured'
+
+        elif patient_state == PatientState.NEEDS_SUPPORT:
+            # Flowing, supportive strokes
+            return 'flowing'
+
+        elif patient_state == PatientState.ENGAGED:
+            # Smooth, collaborative strokes
+            return 'smooth'
+
+        elif patient_state == PatientState.SATISFIED:
+            # Playful, decorative strokes
+            return 'playful'
+
+        else:
+            # Default to smooth
+            return 'smooth'

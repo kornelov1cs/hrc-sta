@@ -20,7 +20,7 @@ import time
 from typing import List, Dict
 import asyncio
 
-from models import (
+from api.models import (
     StrokeRequest,
     StrokeResponse,
     RobotActionResponse,
@@ -232,6 +232,7 @@ class SessionManager:
                 shape = stroke_params['shape']
                 position = stroke_params['position']
                 size = stroke_params['size']
+                points = stroke_params.get('points', None)  # Get continuous path points if available
 
                 self.canvas.add_stroke(
                     agent="robot",
@@ -252,7 +253,8 @@ class SessionManager:
                     color=color_name,
                     shape=shape_name,
                     size=size,
-                    timestamp=self.current_timestep
+                    timestamp=self.current_timestep,
+                    points=points
                 ))
 
                 # Update robot stroke tracking
@@ -377,6 +379,7 @@ async def process_prompt(prompt: PromptRequest):
             shape = stroke_params['shape']
             position = stroke_params['position']
             size = stroke_params['size']
+            points = stroke_params.get('points', None)  # Get continuous path points if available
 
             session.canvas.add_stroke(
                 agent="robot",
@@ -397,7 +400,8 @@ async def process_prompt(prompt: PromptRequest):
                 color=color_name,
                 shape=shape_name,
                 size=size,
-                timestamp=session.current_timestep
+                timestamp=session.current_timestep,
+                points=points
             ))
 
             session.current_timestep += 1

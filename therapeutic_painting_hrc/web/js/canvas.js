@@ -249,12 +249,45 @@ class CanvasManager {
 
     addRobotStroke(strokeData) {
         // Add robot stroke to canvas
-        const { position, color, shape, size } = strokeData;
+        const { position, color, shape, size, points } = strokeData;
         const hexColor = COLOR_MAP[color];
 
         let fabricObject;
 
+        // If stroke has continuous path points, render as path
+        if (points && points.length > 1) {
+            fabricObject = this.createPathFromPoints(points, hexColor, size);
+        }
+        // Otherwise, create appropriate fabric object based on shape
+        else {
+            fabricObject = this.createShapeObject(shape, position, size, hexColor);
+        }
+
+        // Mark as robot stroke
+        fabricObject.set({
+            _isRobotStroke: true,
+            selectable: false,
+            evented: false
+        });
+
+        // Add to canvas
+        this.canvas.add(fabricObject);
+        this.robotStrokeCount++;
+
+        // Update layer visibility
+        this.layerManager.updateLayerVisibility();
+
+        // Update statistics
+        this.updateStatistics();
+
+        // Save state for history
+        this.historyManager.saveState();
+    }
+
+    createShapeObject(shape, position, size, hexColor) {
         // Create appropriate fabric object based on shape
+        let fabricObject;
+
         switch (shape) {
             case 'CIRCLE':
                 fabricObject = new fabric.Circle({
@@ -318,25 +351,48 @@ class CanvasManager {
                 });
         }
 
-        // Mark as robot stroke
-        fabricObject.set({
-            _isRobotStroke: true,
-            selectable: false,
-            evented: false
+        return fabricObject;
+    }
+
+    createPathFromPoints(points, color, strokeWidth) {
+        // Create a continuous path from array of points
+        // Convert points array to SVG path string
+        if (points.length < 2) {
+            // Fallback to circle if not enough points
+            return new fabric.Circle({
+                left: points[0][0],
+                top: points[0][1],
+                radius: strokeWidth / 2,
+                fill: color,
+                stroke: color,
+                strokeWidth: 2
+            });
+        }
+
+        // Build SVG path string
+        let pathString = `M ${points[0][0]} ${points[0][1]}`;
+
+        // Use quadratic curves for smooth connection between points
+        for (let i = 1; i < points.length - 1; i++) {
+            const xc = (points[i][0] + points[i + 1][0]) / 2;
+            const yc = (points[i][1] + points[i + 1][1]) / 2;
+            pathString += ` Q ${points[i][0]} ${points[i][1]}, ${xc} ${yc}`;
+        }
+
+        // Add final point
+        if (points.length > 1) {
+            const lastPoint = points[points.length - 1];
+            pathString += ` L ${lastPoint[0]} ${lastPoint[1]}`;
+        }
+
+        // Create fabric.Path from the SVG path string
+        return new fabric.Path(pathString, {
+            fill: '',
+            stroke: color,
+            strokeWidth: Math.max(2, strokeWidth / 5),
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round'
         });
-
-        // Add to canvas
-        this.canvas.add(fabricObject);
-        this.robotStrokeCount++;
-
-        // Update layer visibility
-        this.layerManager.updateLayerVisibility();
-
-        // Update statistics
-        this.updateStatistics();
-
-        // Save state for history
-        this.historyManager.saveState();
     }
 
     generateCurvePath(position, size) {
