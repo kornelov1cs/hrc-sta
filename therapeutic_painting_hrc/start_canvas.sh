@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Therapeutic Painting Canvas - Quick Start Script
-
-echo "================================================"
-echo "  Therapeutic Painting - Fabric.js Canvas"
-echo "================================================"
-echo ""
-
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "No virtual environment found. Creating one..."
@@ -21,7 +14,7 @@ source venv/bin/activate
 # Install/upgrade dependencies
 echo ""
 echo "Installing dependencies..."
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt
 
 # Check if installation was successful
 if [ $? -eq 0 ]; then
@@ -31,16 +24,8 @@ else
     exit 1
 fi
 
-# Start the FastAPI server
-echo ""
-echo "================================================"
-echo "  Starting FastAPI server..."
-echo "================================================"
-echo ""
-echo "🎨 Canvas will be available at: http://localhost:8000"
-echo ""
-echo "Press Ctrl+C to stop the server"
-echo ""
 
-# Run the server as a module (required for relative imports)
+echo "🎨 Canvas will be available at: http://localhost:8000"
+
+# Run the server
 python -m api.server

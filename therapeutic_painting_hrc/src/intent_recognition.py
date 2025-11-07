@@ -110,7 +110,7 @@ class PatientIntentHMM:
         """
         Build observation emission probability matrix.
 
-        PARAMETER JUSTIFICATION (per assignment criteria):
+        PARAMETER JUSTIFICATION:
         Emission probabilities link hidden emotional states to observable behaviors:
         - ENGAGED: High prob. of DRAWING (0.4) and LONG_STROKE (0.3), low IDLE (0.05)
           -> Active, confident painting behavior

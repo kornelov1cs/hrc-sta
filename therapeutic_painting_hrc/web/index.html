@@ -1,177 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Therapeutic Painting - HRC Simulation</title>
 
     <!-- Fabric.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <!-- Header -->
-        <header>
-            <h1>Therapeutic Painting Studio</h1>
-            <p class="subtitle">Human-Robot Collaboration | Intent Recognition with HMM | Decision-Making with BDI+MDP</p>
-        </header>
+      <!-- Header -->
+      <header>
+        <h1>Therapeutic Painting Studio</h1>
+      </header>
 
-        <div class="main-content">
-            <!-- Left Sidebar - Simple Drawing Tools -->
-            <aside class="sidebar left-sidebar">
-                <div class="tool-section">
-                    <h3>Drawing Tools</h3>
+      <div class="main-content">
+        <!-- Left Sidebar - Simple Drawing Tools -->
+        <aside class="sidebar left-sidebar">
+          <div class="tool-section">
+            <h3>Drawing Tools</h3>
 
-                    <!-- Therapeutic Colors -->
-                    <div class="tool-group">
-                        <label>Therapeutic Colors</label>
-                        <div class="color-palette">
-                            <button class="color-btn active" data-color="RED" style="background-color: #FF6B6B" title="Red - Energizing"></button>
-                            <button class="color-btn" data-color="BLUE" style="background-color: #4ECDC4" title="Blue - Calming"></button>
-                            <button class="color-btn" data-color="YELLOW" style="background-color: #FFE66D" title="Yellow - Uplifting"></button>
-                            <button class="color-btn" data-color="GREEN" style="background-color: #95E1D3" title="Green - Balancing"></button>
-                            <button class="color-btn" data-color="PURPLE" style="background-color: #AA96DA" title="Purple - Creative"></button>
-                            <button class="color-btn" data-color="ORANGE" style="background-color: #FCBF49" title="Orange - Warm"></button>
-                        </div>
-                    </div>
+            <!-- Therapeutic Colors -->
+            <div class="tool-group">
+              <label>Therapeutic Colors</label>
+              <div class="color-palette">
+                <button
+                  class="color-btn active"
+                  data-color="RED"
+                  style="background-color: #ff6b6b"
+                  title="Red - Energizing"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="BLUE"
+                  style="background-color: #4ecdc4"
+                  title="Blue - Calming"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="YELLOW"
+                  style="background-color: #ffe66d"
+                  title="Yellow - Uplifting"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="GREEN"
+                  style="background-color: #95e1d3"
+                  title="Green - Balancing"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="PURPLE"
+                  style="background-color: #aa96da"
+                  title="Purple - Creative"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="ORANGE"
+                  style="background-color: #fcbf49"
+                  title="Orange - Warm"
+                ></button>
+              </div>
+            </div>
 
-                    <!-- Brush Size -->
-                    <div class="tool-group">
-                        <label>Brush Size: <span id="size-value">20</span>px</label>
-                        <input type="range" id="brush-size" min="10" max="50" value="20" step="5">
-                    </div>
+            <!-- Brush Size -->
+            <div class="tool-group">
+              <label>Brush Size: <span id="size-value">20</span>px</label>
+              <input
+                type="range"
+                id="brush-size"
+                min="10"
+                max="50"
+                value="20"
+                step="5"
+              />
+            </div>
 
-                    <!-- Basic Shapes -->
-                    <div class="tool-group">
-                        <label>Quick Shapes</label>
-                        <div class="button-group">
-                            <button class="shape-btn" data-shape="CIRCLE" title="Circle">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="8"/>
-                                </svg>
-                            </button>
-                            <button class="shape-btn" data-shape="SQUARE" title="Square">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="4" y="4" width="16" height="16"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+            <!-- Basic Shapes -->
+            <div class="tool-group">
+              <label>Quick Shapes</label>
+              <div class="button-group">
+                <button class="shape-btn" data-shape="CIRCLE" title="Circle">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="8" />
+                  </svg>
+                </button>
+                <button class="shape-btn" data-shape="SQUARE" title="Square">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="4" y="4" width="16" height="16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-                    <!-- Clear Button -->
-                    <div class="tool-group">
-                        <button class="action-btn danger" id="clear-btn" title="Clear Canvas">
-                            Clear Canvas
-                        </button>
-                    </div>
+            <!-- Clear Button -->
+            <div class="tool-group">
+              <button
+                class="action-btn danger"
+                id="clear-btn"
+                title="Clear Canvas"
+              >
+                Clear Canvas
+              </button>
+            </div>
 
-                    <!-- Instructions -->
-                    <div class="tool-group">
-                        <label>How to Use</label>
-                        <p style="font-size: 0.85em; line-height: 1.4; color: #666;">
-                            Draw on the canvas to express yourself. The robot observes your activity and emotional state (via HMM), then decides how to assist using BDI architecture and MDP policy.
-                        </p>
-                    </div>
+            <!-- Instructions -->
+            <div class="tool-group">
+              <label>How to Use</label>
+              <p style="font-size: 0.85em; line-height: 1.4; color: #666">
+                Draw on the canvas to express yourself. The robot observes your
+                activity and emotional state (via HMM), then decides how to
+                assist using BDI architecture and MDP policy.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <main class="canvas-container">
+          <div class="canvas-wrapper">
+            <canvas id="painting-canvas"></canvas>
+          </div>
+
+          <!-- Prompt Input (for robot interaction) -->
+          <div class="prompt-section">
+            <input
+              type="text"
+              id="prompt-input"
+              placeholder="Optional: Ask the robot to draw something (e.g., 'Draw a sun')"
+            />
+            <button id="send-prompt-btn">Send</button>
+          </div>
+        </main>
+
+        <!-- Right Sidebar - HRC System Status -->
+        <aside class="sidebar right-sidebar">
+          <div class="info-section">
+            <h3>HRC System Status</h3>
+
+            <!-- Connection Status -->
+            <div class="status-indicator">
+              <span class="status-dot" id="connection-status"></span>
+              <span id="connection-text">Connecting...</span>
+            </div>
+
+            <!-- SENSE: Patient Observation -->
+            <div class="info-group">
+              <label>SENSE: Patient State (HMM Belief)</label>
+              <div class="info-value" id="patient-state">Initializing...</div>
+              <div class="belief-bars" id="belief-distribution"></div>
+              <small style="color: #666; font-size: 0.8em">
+                Hidden Markov Model updates belief distribution based on
+                observed behavior
+              </small>
+            </div>
+
+            <!-- THINK: Robot Decision -->
+            <div class="info-group">
+              <label>THINK: BDI Decision Layer</label>
+              <div
+                class="info-value"
+                id="robot-desires"
+                style="font-size: 0.85em; margin-bottom: 0.5em"
+              >
+                Active Desires: -
+              </div>
+              <small style="color: #666; font-size: 0.8em">
+                Beliefs → Desires → Intentions (MDP policy)
+              </small>
+            </div>
+
+            <!-- ACT: Robot Action -->
+            <div class="info-group">
+              <label>ACT: Current Robot Action</label>
+              <div class="info-value" id="robot-action">Waiting</div>
+            </div>
+
+            <!-- Canvas Statistics -->
+            <div class="info-group">
+              <label>Canvas Statistics</label>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Coverage:</span>
+                  <span class="stat-value" id="canvas-coverage">0%</span>
                 </div>
-            </aside>
-
-            <!-- Canvas Area -->
-            <main class="canvas-container">
-                <div class="canvas-wrapper">
-                    <canvas id="painting-canvas"></canvas>
+                <div class="stat-item">
+                  <span class="stat-label">Your Strokes:</span>
+                  <span class="stat-value" id="patient-strokes">0</span>
                 </div>
-
-                <!-- Prompt Input (for robot interaction) -->
-                <div class="prompt-section">
-                    <input type="text" id="prompt-input" placeholder="Optional: Ask the robot to draw something (e.g., 'Draw a sun')">
-                    <button id="send-prompt-btn">Send</button>
+                <div class="stat-item">
+                  <span class="stat-label">Robot Strokes:</span>
+                  <span class="stat-value" id="robot-strokes">0</span>
                 </div>
-            </main>
-
-            <!-- Right Sidebar - HRC System Status -->
-            <aside class="sidebar right-sidebar">
-                <div class="info-section">
-                    <h3>HRC System Status</h3>
-
-                    <!-- Connection Status -->
-                    <div class="status-indicator">
-                        <span class="status-dot" id="connection-status"></span>
-                        <span id="connection-text">Connecting...</span>
-                    </div>
-
-                    <!-- SENSE: Patient Observation -->
-                    <div class="info-group">
-                        <label>SENSE: Patient State (HMM Belief)</label>
-                        <div class="info-value" id="patient-state">Initializing...</div>
-                        <div class="belief-bars" id="belief-distribution"></div>
-                        <small style="color: #666; font-size: 0.8em;">
-                            Hidden Markov Model updates belief distribution based on observed behavior
-                        </small>
-                    </div>
-
-                    <!-- THINK: Robot Decision -->
-                    <div class="info-group">
-                        <label>THINK: BDI Decision Layer</label>
-                        <div class="info-value" id="robot-desires" style="font-size: 0.85em; margin-bottom: 0.5em;">
-                            Active Desires: -
-                        </div>
-                        <small style="color: #666; font-size: 0.8em;">
-                            Beliefs → Desires → Intentions (MDP policy)
-                        </small>
-                    </div>
-
-                    <!-- ACT: Robot Action -->
-                    <div class="info-group">
-                        <label>ACT: Current Robot Action</label>
-                        <div class="info-value" id="robot-action">Waiting</div>
-                    </div>
-
-                    <!-- Canvas Statistics -->
-                    <div class="info-group">
-                        <label>Canvas Statistics</label>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span class="stat-label">Coverage:</span>
-                                <span class="stat-value" id="canvas-coverage">0%</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Your Strokes:</span>
-                                <span class="stat-value" id="patient-strokes">0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Robot Strokes:</span>
-                                <span class="stat-value" id="robot-strokes">0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total Strokes:</span>
-                                <span class="stat-value" id="total-strokes">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Robot Messages / Activity Log -->
-                    <div class="info-group">
-                        <label>Activity Log</label>
-                        <div class="message-log" id="message-log">
-                            <small style="color: #999;">Waiting for activity...</small>
-                        </div>
-                    </div>
+                <div class="stat-item">
+                  <span class="stat-label">Total Strokes:</span>
+                  <span class="stat-value" id="total-strokes">0</span>
                 </div>
-            </aside>
-        </div>
+              </div>
+            </div>
 
-        <!-- Footer Note -->
-        <footer style="text-align: center; padding: 1em; color: #999; font-size: 0.85em;">
-            Therapeutic Painting HRC System | HMM Intent Recognition + BDI Architecture + MDP Decision Making
-        </footer>
+            <!-- Robot Messages / Activity Log -->
+            <div class="info-group">
+              <label>Activity Log</label>
+              <div class="message-log" id="message-log">
+                <small style="color: #999">Waiting for activity...</small>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Footer Note -->
+      <footer
+        style="text-align: center; padding: 1em; color: #999; font-size: 0.85em"
+      >
+        Therapeutic Painting HRC System | HMM Intent Recognition + BDI
+        Architecture + MDP Decision Making
+      </footer>
     </div>
 
     <!-- JavaScript Modules (simplified) -->
     <script type="module" src="/static/js/canvas.js"></script>
     <script type="module" src="/static/js/tools.js"></script>
     <script type="module" src="/static/js/robot.js"></script>
-</body>
+  </body>
 </html>

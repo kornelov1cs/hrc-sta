@@ -358,7 +358,7 @@ class TherapeuticPaintingMDP:
         """
         Initialize reward function weights.
 
-        PARAMETER JUSTIFICATION (per assignment criteria):
+        PARAMETER JUSTIFICATION:
         Values are calibrated based on therapeutic priorities:
         - Highest rewards (15.0): Prevent stagnation and assist frustrated patients
           (critical for therapy effectiveness)
